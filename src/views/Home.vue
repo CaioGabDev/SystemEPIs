@@ -28,6 +28,25 @@
       <Card />
       <Card />
       </div>
+      <div class ="titleEPIs">
+        <h1 class="title">EPIs</h1>
+        <h1 class="title-laranja">Monitorados</h1>
+      </div>
+        <div class="card-containerEPI">
+          <CardEPI />
+          <CardEPI />
+          <CardEPI />
+        </div>
+        <div class="card-containerEPI">
+          <CardEPI />
+          <CardEPI />
+          <CardEPI />
+        </div>
+        <div class="card-containerEPI">
+          <CardEPI />
+          <CardEPI />
+          <CardEPI />
+        </div>
     </main>
   </div>
 </template>
@@ -36,6 +55,7 @@
 import Header from '../components/Header.vue'
 import imageSrc from '../assets/a-Photoroom.png'
 import Card from '../components/Card.vue'
+import CardEPI from '../components/Card-EPI.vue'
 </script>
 
 <style>
@@ -125,9 +145,31 @@ body {
 .card-container {
   display: flex;
   gap: 6rem;
-  margin-top: 40px;
-  margin-top: 10%;
+  margin-top: 20rem;
 }
+
+.card-containerEPI {
+  display: flex;
+  gap: 6rem;
+  margin-bottom: 2rem;
+}
+
+.titleEPIs {
+  display: flex;
+  flex-direction: row;
+  gap:2rem;
+  margin-top: 20rem;
+}
+
+.titleEPIs .title-laranja {
+  font-size: 3rem;
+  color:#d14426
+}
+
+.titleEPIs .title {
+  font-size: 3rem;
+}
+
 
 @media (max-width: 900px) {
   .home-container {
