@@ -10,8 +10,8 @@
         </p>
         
         <div class="button-group">
-          <button class="btn btn-login">Login</button>
-          <button class="btn btn-cadastro">Cadastro</button>
+          <router-link to="/login"><button class="btn btn-login">Login</button></router-link>
+          <router-link to="/cadastro"><button class="btn btn-cadastro">Cadastro</button></router-link>
         </div>
       </div>
 

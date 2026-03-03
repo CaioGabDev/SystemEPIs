@@ -12,9 +12,9 @@
     </div>
 
     <div class="user-container">
-      <div class="user-icon">
+      <router-link to="/login"><div class="user-icon">
         <span class="icon-placeholder">👤</span>
-      </div>
+      </div></router-link>
       <div class="tooltip">
         Faça Login!!
       </div>

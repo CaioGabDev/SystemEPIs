@@ -20,14 +20,16 @@
     </div>
     <asside>
       <h1>Gestão de EPI </h1>
-      <h2>Controle total por sua segurança!!</h2>
+      <h2>Bem-Vindo(a)! Insira seus dados.</h2>
       <div class="inputs">
+        <input v-model="message" placeholder="Nome">
         <input v-model="message" placeholder="E-mail">
         <input v-model="message" placeholder="Senha">
+        <input v-model="message" placeholder="Repita sua senha">
       </div>
       <div class="buttons">
-      <button>Login</button>
-      <router-link to="/cadastro"><button>Cadastro</button></router-link>
+        <button>Cadastrar</button>
+        <router-link to="/login"><button>Já tenho uma conta!</button></router-link>
       </div>
     </asside>
     </div>
