@@ -11,13 +11,22 @@
       <h2 class="logo-text">DashEPI</h2>
     </div>
 
+    <nav>
+      <router-link to="/dashboard" class="nav-dashboard">
+        <h1>Dashboard</h1>
+      </router-link>
+      <router-link to="/epis" class="nav-dashboard">
+        <h1>EPIs</h1>
+      </router-link>
+      <router-link to="/cadastrar" class="nav-dashboard">
+        <h1>Cadastrar</h1>
+      </router-link>
+    </nav>
+
     <div class="user-container">
       <router-link to="/login" class="user-icon">
         <span class="icon-placeholder">👤</span>
       </router-link>
-      <div class="tooltip">
-        Faça Login!!
-      </div>
     </div>
   </header>
 </template>
@@ -79,7 +88,6 @@ import imageIcon from '../assets/logo empresa.png'
   align-items: center;
   font-size: 1.2rem;
   cursor: pointer;
-  text-decoration: none;
 }
 
 .tooltip {
@@ -103,5 +111,25 @@ import imageIcon from '../assets/logo empresa.png'
   border-width: 6px;
   border-style: solid;
   border-color: transparent transparent #f05432 transparent;
+}
+
+nav {
+  display: flex;
+  flex-direction: row;
+  gap: 3rem;
+  margin-right: 9rem;
+}
+
+.nav-dashboard {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+nav h1 {
+  font-size: 1.5rem;
+  color: #ffffff;
+  text-decoration: none;
+  margin: 0;
 }
 </style>

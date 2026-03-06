@@ -58,7 +58,7 @@ import Card from '../components/Card.vue'
 import CardEPI from '../components/Card-EPI.vue'
 </script>
 
-<style>
+<style scoped>
 * {
   margin: 0;
   padding: 0;

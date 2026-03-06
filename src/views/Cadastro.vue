@@ -28,7 +28,7 @@
         <input v-model="message" placeholder="Repita sua senha">
       </div>
       <div class="buttons">
-        <button>Cadastrar</button>
+        <router-link to="/login"><button>Cadastrar</button></router-link>
         <router-link to="/login"><button>Já tenho uma conta!</button></router-link>
       </div>
     </asside>
