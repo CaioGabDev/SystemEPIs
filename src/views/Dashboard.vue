@@ -15,12 +15,20 @@
             <h1 class="title">Bem vindo ao Dashboard!!</h1>
             </div>
         </div>
+        <div class="content-right">
+                <CardDashboard />
+                <CardDashboard />
+                <CardDashboard />
+                <CardDashboard />
+                <CardDashboard />
+            </div>
     </main>
   </div>
 </template>
 
 <script setup>
 import HeaderGeral from '../components/HeaderGeral.vue'
+import CardDashboard from '../components/CardDashboard.vue'
 </script>
 
 <style scoped>
@@ -36,6 +44,7 @@ import HeaderGeral from '../components/HeaderGeral.vue'
 }
 
 .Button-icon {
+    margin-left: 5rem;
     color: rgb(80, 13, 13);
 }
 
@@ -49,6 +58,13 @@ import HeaderGeral from '../components/HeaderGeral.vue'
 .title {
     font-size: 2rem;
     color: white;
+}
+
+.content-right {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 3rem;
 }
 
 </style>
