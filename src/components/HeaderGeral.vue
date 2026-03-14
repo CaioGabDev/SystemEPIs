@@ -24,7 +24,7 @@
     </nav>
 
     <div class="user-container">
-      <router-link to="/login" class="user-icon">
+      <router-link to="/perfil" class="user-icon">
         <span class="icon-placeholder">👤</span>
       </router-link>
     </div>
