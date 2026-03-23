@@ -16,11 +16,13 @@
             </div>
         </div>
         <div class="content-right">
-                <CardDashboard />
-                <CardDashboard />
-                <CardDashboard />
-                <CardDashboard />
-                <CardDashboard />
+                <CardDashboard 
+                  v-for="(item, index) in dashboardItems" 
+                  :key="index"
+                  :title="item.title"
+                  :description="item.description"
+                  :imageSrc="item.imageSrc"
+                />
             </div>
     </main>
   </div>
@@ -29,6 +31,34 @@
 <script setup>
 import HeaderGeral from '../components/HeaderGeral.vue'
 import CardDashboard from '../components/CardDashboard.vue'
+
+const dashboardItems = [
+  {
+    title: 'Card 1',
+    description: 'Descrição do card 1.',
+    imageSrc: '../assets/painel-de-controle.png'
+  },
+  {
+    title: 'Card 2',
+    description: 'Descrição do card 2.',
+    imageSrc: '../assets/painel-de-controle.png'
+  },
+  {
+    title: 'Card 3',
+    description: 'Descrição do card 3.',
+    imageSrc: '../assets/painel-de-controle.png'
+  },
+  {
+    title: 'Card 4',
+    description: 'Descrição do card 4.',
+    imageSrc: '../assets/painel-de-controle.png'
+  },
+  {
+    title: 'Card 5',
+    description: 'Descrição do card 5.',
+    imageSrc: '../assets/painel-de-controle.png'
+  }
+]
 </script>
 
 <style scoped>

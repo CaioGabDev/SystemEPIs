@@ -297,7 +297,7 @@ body {
   display: flex;
   flex-direction: row;
   gap:2rem;
-  margin-top: 20rem;
+  margin-top: 16rem;
 }
 
 .titleEPIs .title-laranja {

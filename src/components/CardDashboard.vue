@@ -1,14 +1,28 @@
 <template>
   <div class="card">
     <div class="card-content">
-      <img src="../assets/card-image.png" alt="Icone" class="card-image" />
-      <h2 class="card-title">Card Title</h2>
-      <p class="card-description">blaa.</p>
+      <img :src="imageSrc" alt="Icone" class="card-image" />
+      <h2 class="card-title">{{ title }}</h2>
+      <p class="card-description">{{ description }}</p> 
     </div>
   </div>
 </template>
 
 <script setup>
+defineProps({
+  title: {
+    type: String,
+    required: true
+  },
+  description: {
+    type: String,
+    required: true
+  },
+  imageSrc: {
+    type: String,
+    required: true
+  }
+})
 </script>
 
 <style scoped>
