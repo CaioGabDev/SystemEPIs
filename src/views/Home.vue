@@ -2,7 +2,7 @@
   <div class="app-wrapper">
     <Header />
     <main class="home-container">
-      <div class="asside">
+      <aside>
       <div class="content-left">
         <h1 class="title">Controle Total</h1>
         <p class="subtitle">
@@ -22,7 +22,7 @@
           class="illustration"
         />
       </div>
-    </div>
+    </aside>
       <div class="card-container">
       <Card 
         v-for="card in cards" 
@@ -137,6 +137,15 @@ import CardEPI from '../components/Card-EPI.vue'
 import imagecontrole from '../assets/painel-de-controle.png'
 import imagedash from '../assets/painel.png'
 import imagedoc from '../assets/documentacao.png'
+import capacete from '../assets/safety.png'
+import colete from '../assets/high-visibility-vest.png'
+import protetorauditivo from '../assets/headphone.png'
+import glasses from '../assets/glasses.png'
+import boot from '../assets/boot.png'
+import gloves from '../assets/gloves.png'
+import overall from '../assets/overall.png'
+import mask from '../assets/mask.png'
+import touca from '../assets/cap.png'
 
 const cards = ref([
   {
@@ -160,19 +169,19 @@ const cards = ref([
 ])
 const cardsEPI = ref({
   linha1: [
-    { id: 1, image: '../assets/card-image.png', title: 'Capacete' },
-    { id: 2, image: '../assets/card-image.png', title: 'Colete' },
-    { id: 3, image: '../assets/card-image.png', title: 'Protetor Auditivo' }
+    { id: 1, image: capacete, title: 'Capacete' },
+    { id: 2, image: colete, title: 'Colete' },
+    { id: 3, image: protetorauditivo, title: 'Protetor Auditivo' }
   ],
   linha2: [
-    { id: 4, image: '../assets/card-image.png', title: 'Óculos' },
-    { id: 5, image: '../assets/card-image.png', title: 'Botas' },
-    { id: 6, image: '../assets/card-image.png', title: 'Luvas' }
+    { id: 4, image: glasses, title: 'Óculos' },
+    { id: 5, image: boot, title: 'Botas' },
+    { id: 6, image: gloves, title: 'Luvas' }
   ],  
   linha3: [
-    { id: 7, image: '../assets/card-image.png', title: 'Macacão' },
-    { id: 8, image: '../assets/card-image.png', title: 'Máscara' },
-    { id: 9, image: '../assets/card-image.png', title: 'Touca' }
+    { id: 7, image: overall, title: 'Macacão' },
+    { id: 8, image: mask, title: 'Máscara' },
+    { id: 9, image: touca, title: 'Touca' }
   ]
 })
 
@@ -223,7 +232,7 @@ body {
   padding: 10px 10%;
 } 
 
-.asside {
+aside {
   display: flex;
   flex-direction: row;
   align-items: center;

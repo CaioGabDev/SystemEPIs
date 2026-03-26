@@ -34,6 +34,8 @@ import imageIcon from '../assets/logo empresa.png'
   background-color: #383e49;
   padding: 15px 50px;
   color: #ffffff;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .logo-container {
@@ -52,8 +54,8 @@ import imageIcon from '../assets/logo empresa.png'
 }
 
 .logo-icon img {
-  width: 250%;
-  height: 250%;
+  width: 100%;
+  height: 100%;
 }
 
 .logo-text {

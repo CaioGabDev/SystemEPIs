@@ -43,6 +43,8 @@ import imageIcon from '../assets/logo empresa.png'
   background-color: #383e49;
   padding: 15px 50px;
   color: #ffffff;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .logo-container {
