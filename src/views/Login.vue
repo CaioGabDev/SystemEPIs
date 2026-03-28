@@ -25,10 +25,10 @@
       <aside>
         <h1 class="title">Gestão de EPI</h1>
         <h2 class="subtitle">Controle total por sua segurança!!</h2>
-        <div class="inputs">
-          <input placeholder="E-mail" class="input-field">
+        <form class="inputs">
+          <input placeholder="E-mail" v-model="email" class="input-field">
           <input placeholder="Senha" type="password" class="input-field">
-        </div>
+        </form>
         <div class="buttons">
           <button class="btn btn-login">Login</button>
           <router-link to="/cadastro"><button class="btn btn-cadastro">Cadastro</button></router-link>

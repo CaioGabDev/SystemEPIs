@@ -31,7 +31,7 @@ defineProps({
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #636b7a;
+  background-color: #3d4555;
   width: 20rem;
   height: 25rem;
   border-radius: 12px;

@@ -25,12 +25,12 @@
       <aside>
         <h1 class="title">Gestão de EPI</h1>
         <h2 class="subtitle">Bem-Vindo(a)! Insira seus dados.</h2>
-        <div class="inputs">
+        <form class="inputs">
           <input placeholder="Nome" class="input-field">
-          <input placeholder="E-mail" class="input-field">
+          <input placeholder="E-mail" v-model="email" class="input-field">
           <input placeholder="Senha" type="password" class="input-field">
           <input placeholder="Repita sua senha" type="password" class="input-field">
-        </div>
+        </form>
         <div class="buttons">
           <button class="btn btn-cadastro">Cadastrar</button>
           <router-link to="/login"><button class="btn btn-login">Já tenho conta</button></router-link>
