@@ -27,10 +27,10 @@
         <h2 class="subtitle">Controle total por sua segurança!!</h2>
         <form class="inputs">
           <input placeholder="E-mail" v-model="email" class="input-field">
-          <input placeholder="Senha" type="password" class="input-field">
+          <input placeholder="Senha" type="password" v-model="password" class="input-field">
         </form>
         <div class="buttons">
-          <button class="btn btn-login">Login</button>
+          <button @click="handleLogin" class="btn btn-login">Login</button>
           <router-link to="/cadastro"><button class="btn btn-cadastro">Cadastro</button></router-link>
         </div>
       </aside>
@@ -41,8 +41,33 @@
 <script setup>
 import imageIcon from '../assets/logo empresa.png'
 import imageLogin from '../assets/PaginaLogin.png'
+import { ref } from 'vue'
+import { useSupabase } from '../composables/useSupabase'
+import { useRouter } from 'vue-router'
 
-const message = ''
+const { signIn } = useSupabase()
+const router = useRouter()
+
+const email = ref('')
+const password = ref('')
+
+const handleLogin = async () => {
+  try {
+    const response = await signIn(email.value, password.value)
+    const tipoUsuario = response?.tipo || 'aluno' // Padrão: aluno
+    
+    console.log('Login bem-sucedido. Tipo:', tipoUsuario)
+    
+    // Redireciona conforme o tipo
+    if (tipoUsuario === 'funcionario' || tipoUsuario === 'admin') {
+      router.push('/dashboard') // Dashboard de admin/funcionário
+    } else {
+      router.push('/dashboard-aluno') // Dashboard de aluno
+    }
+  } catch (error) {
+    alert('Erro no login: ' + error.message)
+  }
+}
 </script>
 
 <style scoped>

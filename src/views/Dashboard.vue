@@ -31,11 +31,23 @@
 <script setup>
 import HeaderGeral from '../components/HeaderGeral.vue'
 import CardDashboard from '../components/CardDashboard.vue'
+import { ref, onMounted } from 'vue'
+import { useSupabase } from '../composables/useSupabase'
+
+const { getEPIs, session } = useSupabase()
+
+const epis = ref([])
+
+onMounted(async () => {
+  if (session.value) {
+    epis.value = await getEPIs()
+  }
+})
 
 const dashboardItems = [
   {
-    title: 'Card 1',
-    description: 'Descrição do card 1.',
+    title: 'Total EPIs',
+    description: `Há ${epis.value.length} EPIs cadastrados.`,
     imageSrc: '../assets/painel-de-controle.png'
   },
   {

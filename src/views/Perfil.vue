@@ -1,66 +1,652 @@
 <template>
-  <div class="dashboard-container">
-    <HeaderGeral />
-    <main class="home-container">
-        <div class="card-container">
-            <div class="Button-icon">
-                <button class="icon"></button>
-                <button class="icon"></button>
-                <div class="button2">
-                <button class="icon"></button>
-                <button class="icon"></button>
+    <div class="perfil-page">
+        <HeaderGeral />
+        <main class="perfil-main">
+            <section class="top-panel">
+                <div class="profile-card">
+                    <div class="profile-card-header">
+                        <div class="avatar">👤</div>
+                        <div class="profile-info">
+                            <h1>{{ profileName }}</h1>
+                            <p class="turma-label">Turma: {{ turmaNome || "Sem turma" }}</p>
+                        </div>
+                        <div class="profile-actions">
+                            <button v-if="!editMode" class="edit-btn" @click="editProfile">
+                                Editar Perfil
+                            </button>
+                            <div v-else class="edit-actions">
+                                <button class="save-btn" @click="saveProfile">Salvar</button>
+                                <button class="cancel-btn" @click="cancelEdit">Cancelar</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-grid">
+                        <div class="info-box">
+                            <h2>Informações Pessoais</h2>
+                            <div class="info-row">
+                                <span>Nome</span>
+                                <div class="info-value">
+                                    <input v-if="editMode" v-model="profileData.nome" type="text" class="info-input" />
+                                    <strong v-else>{{ user?.nome || "---" }}</strong>
+                                </div>
+                            </div>
+                            <div class="info-row">
+                                <span>Sobrenome</span>
+                                <div class="info-value">
+                                    <input v-if="editMode" v-model="profileData.sobrenome" type="text"
+                                        class="info-input" />
+                                    <strong v-else>{{ user?.sobrenome || "---" }}</strong>
+                                </div>
+                            </div>
+                            <div class="info-row">
+                                <span>Data de Nascimento</span>
+                                <div class="info-value">
+                                    <input v-if="editMode" v-model="profileData.data_nascimento" type="date"
+                                        class="info-input" />
+                                    <strong v-else>{{
+                                        formatDate(user?.data_nascimento)
+                                        }}</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="info-box">
+                            <h2>Dados de Contato</h2>
+                            <div class="info-row">
+                                <span>E-mail</span>
+                                <div class="info-value">
+                                    <strong>{{ user?.email || "---" }}</strong>
+                                </div>
+                            </div>
+                            <div class="info-row">
+                                <span>Telefone</span>
+                                <div class="info-value">
+                                    <input v-if="editMode" v-model="profileData.telefone" type="tel"
+                                        class="info-input" />
+                                    <strong v-else>{{ user?.telefone || "---" }}</strong>
+                                </div>
+                            </div>
+                            <div class="info-row">
+                                <span>CPF</span>
+                                <div class="info-value">
+                                    <input v-if="editMode" v-model="profileData.cpf" type="text" class="info-input" />
+                                    <strong v-else>{{ user?.cpf || "---" }}</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="info-box">
+                            <h2>Segurança e Acesso</h2>
+                            <div class="info-row">
+                                <span>Função</span><strong>Aluno</strong>
+                            </div>
+                            <div class="info-row">
+                                <span>Senha</span><strong>********</strong>
+                            </div>
+                            <div class="info-row">
+                                <span>Status</span><strong>Ativo</strong>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
-        <div class="content-right">
-                <CardDashboard />
-                <CardDashboard />
-                <CardDashboard />
-                <CardDashboard />
-                <CardDashboard />
-            </div>
-    </main>
-  </div>
+
+                <div class="epis-panel">
+                    <div class="epis-header">
+                        <h2>Seus EPIs</h2>
+                        <p>Itens que já estão vinculados ao seu perfil</p>
+                    </div>
+                    <div class="epis-list">
+                        <div v-if="episAssigned.length === 0" class="epi-empty">
+                            Nenhum EPI registrado ainda.
+                        </div>
+                        <div v-for="item in episAssigned" :key="item.id_entrega_aluno" class="epi-card">
+                            <div class="epi-card-title">{{ item.epis?.nome || "EPI" }}</div>
+                            <div class="epi-card-subtitle">
+                                {{ item.epis?.tipo || "Tipo não informado" }}
+                            </div>
+                            <div class="epi-status" :class="item.epis?.disponivel
+                                    ? 'status-disponivel'
+                                    : 'status-indisponivel'
+                                ">
+                                {{ item.epis?.disponivel ? "Disponível" : "Indisponível" }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="solicitacoes-section">
+                <div class="section-header">
+                    <div>
+                        <h2>Minhas Solicitações</h2>
+                        <p>Veja o status dos EPIs que você pode solicitar.</p>
+                    </div>
+                    <div class="filter-box">
+                        <input v-model="filterQuery" placeholder="Filtrar" />
+                    </div>
+                </div>
+
+                <div class="request-list">
+                    <div v-for="epi in filteredEpis" :key="epi.idepis" class="request-item">
+                        <div class="request-left">
+                            <span class="request-name">{{ epi.nome }}</span>
+                            <span class="request-type">{{ epi.tipo || "EPI" }}</span>
+                        </div>
+                        <div class="request-status" :class="epi.disponivel ? 'status-disponivel' : 'status-indisponivel'
+                            ">
+                            {{ epi.disponivel ? "Disponível" : "Indisponível" }}
+                        </div>
+                    </div>
+                    <div v-if="filteredEpis.length === 0" class="empty-state">
+                        Nenhuma solicitação encontrada.
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
 </template>
 
 <script setup>
-import HeaderGeral from '../components/HeaderGeral.vue'
+import HeaderGeral from "../components/HeaderGeral.vue";
+import { ref, computed, onMounted, watch } from "vue";
+import { useSupabase } from "../composables/useSupabase";
+import { useRouter } from "vue-router";
+
+const { session, supabase } = useSupabase();
+const router = useRouter();
+
+const user = ref(null);
+const turmaNome = ref("");
+const episAssigned = ref([]);
+const episAvailable = ref([]);
+const filterQuery = ref("");
+const loading = ref(true);
+const editMode = ref(false);
+const profileData = ref({
+    nome: "",
+    sobrenome: "",
+    email: "",
+    telefone: "",
+    cpf: "",
+    data_nascimento: "",
+});
+
+const profileName = computed(() => {
+    if (!user.value) return "Carregando...";
+    return `${user.value.nome || ""} ${user.value.sobrenome || ""}`.trim();
+});
+
+const formatDate = (value) => {
+    if (!value) return "--";
+    return new Date(value).toLocaleDateString("pt-BR");
+};
+
+const filteredEpis = computed(() => {
+    const query = filterQuery.value.toLowerCase().trim();
+    if (!query) return episAvailable.value;
+    return episAvailable.value.filter((epi) =>
+        epi.nome.toLowerCase().includes(query),
+    );
+});
+
+const setProfileForm = () => {
+    if (!user.value) return;
+    profileData.value = {
+        nome: user.value.nome || "",
+        sobrenome: user.value.sobrenome || "",
+        email: user.value.email || "",
+        telefone: user.value.telefone || "",
+        cpf: user.value.cpf || "",
+        data_nascimento: user.value.data_nascimento || "",
+    };
+};
+
+const editProfile = () => {
+    editMode.value = true;
+    setProfileForm();
+};
+
+const cancelEdit = () => {
+    editMode.value = false;
+    setProfileForm();
+};
+
+const saveProfile = async () => {
+    if (!user.value) return;
+
+    try {
+        const updateData = {
+            nome: profileData.value.nome,
+            sobrenome: profileData.value.sobrenome,
+            telefone: profileData.value.telefone,
+            cpf: profileData.value.cpf,
+            data_nascimento: profileData.value.data_nascimento,
+        };
+
+        // Determina se é aluno ou funcionário baseado na ID
+        const isAluno = user.value.idaluno !== undefined;
+        const tableName = isAluno ? "aluno" : "funcionario";
+        const idField = isAluno ? "idaluno" : "idfuncionario";
+        const idValue = isAluno ? user.value.idaluno : user.value.idfuncionario;
+
+        const { data: updated, error } = await supabase
+            .from(tableName)
+            .update(updateData)
+            .eq(idField, idValue)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        user.value = { ...user.value, ...updated };
+        editMode.value = false;
+        setProfileForm();
+        alert('Perfil atualizado com sucesso!');
+    } catch (error) {
+        console.error('Erro ao atualizar perfil:', error);
+        alert('Não foi possível atualizar o perfil.');
+    }
+};
+
+const loadProfile = async () => {
+    if (!session.value || !session.value.user?.email) {
+        router.push("/login");
+        return;
+    }
+
+    const email = session.value.user.email;
+    const metadata = session.value.user.user_metadata || {};
+    
+    // Tenta buscar como aluno primeiro
+    let userData = null;
+    let isAlunoUser = false;
+
+    const { data: alunoData, error: alunoError } = await supabase
+        .from("aluno")
+        .select("*")
+        .ilike("email", email);
+
+    if (!alunoError && alunoData && alunoData.length > 0) {
+        userData = alunoData[0];
+        isAlunoUser = true;
+    } else {
+        // Se não é aluno, tenta buscar como funcionário
+        const { data: funcData, error: funcError } = await supabase
+            .from("funcionario")
+            .select("*")
+            .ilike("email", email);
+
+        if (!funcError && funcData && funcData.length > 0) {
+            userData = funcData[0];
+            isAlunoUser = false;
+        }
+    }
+
+    if (!userData) {
+        alert('Perfil não encontrado. Você precisa completar seu cadastro.');
+        router.push('/cadastro');
+        return;
+    }
+
+    // Enriquece dados com metadata
+    user.value = {
+        ...userData,
+        nome: userData.nome || metadata.nome || '',
+        sobrenome: userData.sobrenome || metadata.sobrenome || '',
+        email: userData.email || email,
+    };
+
+    setProfileForm();
+
+    // Carrega dados relacionados apenas para alunos
+    if (isAlunoUser) {
+        const { data: turmaData } = await supabase
+            .from("aluno_has_turma")
+            .select("turma:turma_id(nome)")
+            .eq("aluno_id", userData.idaluno);
+
+        if (turmaData && turmaData.length > 0) {
+            turmaNome.value = turmaData[0].turma?.nome || '';
+        }
+
+        const { data: entregasData } = await supabase
+            .from("aluno_has_epis")
+            .select("*, epis:epis_id(nome, tipo, disponivel)")
+            .eq("aluno_id", userData.idaluno);
+
+        if (entregasData) {
+            episAssigned.value = entregasData;
+        }
+    }
+
+    const { data: episData } = await supabase.from("epis").select("*");
+    if (episData) {
+        episAvailable.value = episData;
+    }
+
+    loading.value = false;
+};
+
+onMounted(loadProfile);
+watch(session, () => {
+    if (!user.value) loadProfile();
+});
 </script>
 
 <style scoped>
-.home-container {
+.perfil-page {
+    min-height: 100vh;
+    background: #1f2532;
+    color: #edf2f7;
+}
+
+.perfil-main {
+    width: min(1200px, 100%);
+    margin: 0 auto;
+    padding: 2rem 2rem 4rem;
+}
+
+.top-panel {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+}
+
+.profile-card,
+.epis-panel {
+    background: #262c3d;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    padding: 1.8rem;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+}
+
+.profile-card-header {
     display: flex;
-    flex-direction: column;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 1.8rem;
+    justify-content: space-between;
 }
-.card-container {
+
+.profile-actions {
     display: flex;
-    flex-direction: row;
-    gap: 3rem;
-    margin-top: 3rem;
+    gap: 0.8rem;
+    align-items: center;
 }
 
-.Button-icon {
-    margin-left: 5rem;
-    color: rgb(80, 13, 13);
+.edit-btn,
+.save-btn,
+.cancel-btn {
+    border: none;
+    border-radius: 999px;
+    padding: 0.65rem 1rem;
+    font-weight: 600;
+    cursor: pointer;
 }
 
-.icon {
-    gap:3px;
-    width: 1rem;
-    height: 1rem;
-    margin-left: 0.3rem;
-}
-
-.title {
-    font-size: 2rem;
+.edit-btn {
+    background: #f05432;
     color: white;
 }
 
-.content-right {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    gap: 3rem;
+.save-btn {
+    background: #1f6b3c;
+    color: white;
 }
 
+.cancel-btn {
+    background: transparent;
+    color: #cbd5e1;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.info-value {
+    display: flex;
+    justify-content: flex-end;
+    width: 50%;
+}
+
+.info-input {
+    width: 100%;
+    max-width: 220px;
+    padding: 0.55rem 0.85rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: #1f2532;
+    color: #edf2f7;
+}
+
+.info-input:focus {
+    outline: none;
+    border-color: #f05432;
+}
+
+.avatar {
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    background: #3d4555;
+    display: grid;
+    place-items: center;
+    font-size: 2.8rem;
+}
+
+.profile-info h1 {
+    margin: 0;
+    font-size: 2.2rem;
+    color: #ffffff;
+}
+
+.turma-label {
+    margin: 0.35rem 0 0;
+    color: #f05432;
+    font-weight: 600;
+}
+
+.profile-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.info-box {
+    background: #1e2331;
+    border-radius: 14px;
+    padding: 1.2rem;
+}
+
+.info-box h2 {
+    margin: 0 0 1rem;
+    font-size: 1rem;
+    color: #f05432;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.65rem 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.info-row:first-of-type {
+    border-top: none;
+}
+
+.info-row span {
+    color: #9ca3af;
+}
+
+.info-row strong {
+    color: #f8fafc;
+}
+
+.epis-header {
+    margin-bottom: 1rem;
+}
+
+.epis-header h2 {
+    margin: 0;
+    font-size: 1.6rem;
+}
+
+.epis-header p {
+    margin: 0.45rem 0 0;
+    color: #a0aec0;
+}
+
+.epis-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.epi-card {
+    background: #1e2331;
+    border-radius: 14px;
+    padding: 1rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+}
+
+.epi-card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.epi-card-subtitle {
+    color: #94a3b8;
+}
+
+.epi-status {
+    margin-top: auto;
+    width: fit-content;
+    padding: 0.45rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.status-disponivel {
+    background: #1f6b3c;
+    color: #d1fae5;
+}
+
+.status-indisponivel {
+    background: #7b2d2d;
+    color: #ffe4e6;
+}
+
+.epi-empty,
+.empty-state {
+    color: #cbd5e1;
+    padding: 1.6rem;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.solicitacoes-section {
+    background: #262c3d;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 18px;
+    padding: 1.8rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.section-header h2 {
+    margin: 0;
+    font-size: 1.6rem;
+}
+
+.section-header p {
+    margin: 0.4rem 0 0;
+    color: #a0aec0;
+}
+
+.filter-box input {
+    width: 220px;
+    padding: 0.9rem 1rem;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: #1f2532;
+    color: #edf2f7;
+}
+
+.filter-box input::placeholder {
+    color: #94a3b8;
+}
+
+.request-list {
+    display: grid;
+    gap: 0.9rem;
+}
+
+.request-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #1e2331;
+    border-radius: 14px;
+    padding: 1rem 1.2rem;
+}
+
+.request-left {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.request-name {
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.request-type {
+    color: #94a3b8;
+    font-size: 0.92rem;
+}
+
+.request-status {
+    padding: 0.45rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+@media (max-width: 980px) {
+    .top-panel {
+        grid-template-columns: 1fr;
+    }
+
+    .epis-list {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 720px) {
+    .perfil-main {
+        padding: 1.4rem;
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .filter-box input {
+        width: 100%;
+    }
+}
 </style>

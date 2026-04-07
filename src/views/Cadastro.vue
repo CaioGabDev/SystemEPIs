@@ -26,13 +26,13 @@
         <h1 class="title">Gestão de EPI</h1>
         <h2 class="subtitle">Bem-Vindo(a)! Insira seus dados.</h2>
         <form class="inputs">
-          <input placeholder="Nome" class="input-field">
+          <input placeholder="Nome" v-model="nome" class="input-field">
           <input placeholder="E-mail" v-model="email" class="input-field">
-          <input placeholder="Senha" type="password" class="input-field">
-          <input placeholder="Repita sua senha" type="password" class="input-field">
+          <input placeholder="Senha" type="password" v-model="password" class="input-field">
+          <input placeholder="Repita sua senha" type="password" v-model="confirmPassword" class="input-field">
         </form>
         <div class="buttons">
-          <button class="btn btn-cadastro">Cadastrar</button>
+          <button @click="handleCadastro" class="btn btn-cadastro">Cadastrar</button>
           <router-link to="/login"><button class="btn btn-login">Já tenho conta</button></router-link>
         </div>
       </aside>
@@ -43,6 +43,38 @@
 <script setup>
 import imageIcon from '../assets/logo empresa.png'
 import imageLogin from '../assets/PaginaLogin.png'
+import { ref } from 'vue'
+import { useSupabase } from '../composables/useSupabase'
+import { useRouter } from 'vue-router'
+
+const { signUp } = useSupabase()
+const router = useRouter()
+
+const nome = ref('')
+const email = ref('')
+const password = ref('')
+const confirmPassword = ref('')
+
+const handleCadastro = async () => {
+  if (password.value !== confirmPassword.value) {
+    alert('Senhas não coincidem')
+    return
+  }
+  try {
+    const userData = {
+      type: 'aluno', // Sempre cadastra como aluno
+      nome: nome.value,
+      email: email.value,
+      sobrenome: '',
+      cpf: '',
+      funcao: ''
+    }
+    await signUp(email.value, password.value, userData)
+    router.push('/dashboard-aluno') // Redireciona para dashboard de aluno
+  } catch (error) {
+    alert('Erro no cadastro: ' + error.message)
+  }
+}
 </script>
 
 <style scoped>
