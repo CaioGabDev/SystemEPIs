@@ -25,11 +25,13 @@
       <aside>
         <h1 class="title">Gestão de EPI</h1>
         <h2 class="subtitle">Bem-Vindo(a)! Insira seus dados.</h2>
-        <form class="inputs">
-          <input placeholder="Nome" v-model="nome" class="input-field">
-          <input placeholder="E-mail" v-model="email" class="input-field">
-          <input placeholder="Senha" type="password" v-model="password" class="input-field">
-          <input placeholder="Repita sua senha" type="password" v-model="confirmPassword" class="input-field">
+        <form class="inputs" @submit.prevent="handleCadastro">
+          <input placeholder="Nome" v-model="nome" required class="input-field">
+          <input placeholder="Sobrenome" v-model="sobrenome" class="input-field">
+          <input placeholder="CPF (xxx.xxx.xxx-xx)" v-model="cpf" required class="input-field">
+          <input placeholder="E-mail" v-model="email" type="email" required class="input-field">
+          <input placeholder="Senha" type="password" v-model="password" required class="input-field">
+          <input placeholder="Repita sua senha" type="password" v-model="confirmPassword" required class="input-field">
         </form>
         <div class="buttons">
           <button @click="handleCadastro" class="btn btn-cadastro">Cadastrar</button>
@@ -51,27 +53,51 @@ const { signUp } = useSupabase()
 const router = useRouter()
 
 const nome = ref('')
+const sobrenome = ref('')
+const cpf = ref('')
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 
 const handleCadastro = async () => {
+  // Validações
+  if (!nome.value.trim()) {
+    alert('Nome é obrigatório')
+    return
+  }
+  if (!cpf.value.trim()) {
+    alert('CPF é obrigatório')
+    return
+  }
+  if (!email.value.trim()) {
+    alert('E-mail é obrigatório')
+    return
+  }
+  if (password.value.length < 6) {
+    alert('Senha deve ter pelo menos 6 caracteres')
+    return
+  }
   if (password.value !== confirmPassword.value) {
     alert('Senhas não coincidem')
     return
   }
+  
   try {
     const userData = {
-      type: 'aluno', // Sempre cadastra como aluno
-      nome: nome.value,
-      email: email.value,
-      sobrenome: '',
-      cpf: '',
+      type: 'aluno',
+      nome: nome.value.trim(),
+      sobrenome: sobrenome.value.trim(),
+      cpf: cpf.value.trim(),
+      email: email.value.trim(),
       funcao: ''
     }
-    await signUp(email.value, password.value, userData)
-    router.push('/dashboard-aluno') // Redireciona para dashboard de aluno
+    
+    console.log('Enviando dados:', userData)
+    await signUp(email.value.trim(), password.value, userData)
+    alert('Cadastro realizado com sucesso!')
+    router.push('/dashboard-aluno')
   } catch (error) {
+    console.error('Erro no cadastro:', error)
     alert('Erro no cadastro: ' + error.message)
   }
 }

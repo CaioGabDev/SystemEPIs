@@ -184,6 +184,106 @@ export function useSupabase() {
     return data;
   };
 
+  // Dashboard - Métodos específicos
+  const getDashboardStats = async () => {
+    const { data: todos, error: e1 } = await supabase.from("epis").select("*");
+    const { data: entregas, error: e2 } = await supabase.from("aluno_has_epis").select("*");
+    
+    if (e1 || e2) throw new Error('Erro ao buscar estatísticas');
+    
+    const total = todos.length;
+    const emUso = entregas.length;
+    const disponivel = total - emUso;
+    
+    return {
+      total,
+      disponivel,
+      emUso,
+      percentualDisponibilidade: total > 0 ? ((disponivel / total) * 100).toFixed(1) : 0
+    };
+  };
+
+  const getEntregasRecentes = async (limite = 5) => {
+    const { data, error } = await supabase.from("aluno_has_epis").select(`
+      id_entrega_aluno,
+      data_entrega,
+      aluno:aluno_id (nome, sobrenome),
+      epis:epis_id (nome, tipo)
+    `)
+    .order('data_entrega', { ascending: false })
+    .limit(limite);
+    
+    if (error) throw error;
+    return data;
+  };
+
+  const getEstoquePerTipo = async () => {
+    const { data, error } = await supabase.from("epis").select("tipo, quantidade");
+    if (error) throw error;
+    
+    const estoque = {};
+    data.forEach(epi => {
+      if (!estoque[epi.tipo]) {
+        estoque[epi.tipo] = 0;
+      }
+      estoque[epi.tipo] += epi.quantidade || 0;
+    });
+    
+    return Object.entries(estoque).map(([tipo, quantidade]) => ({
+      tipo,
+      quantidade
+    }));
+  };
+
+  const alertasEPIs = async () => {
+    const { data, error } = await supabase.from("epis")
+      .select("*")
+      .lt('data_validade', new Date().toISOString().split('T')[0]);
+    
+    if (error) throw error;
+    return data || [];
+  };
+
+  const getFuncionarioComEPIs = async () => {
+    const { data, error } = await supabase.from("funcionario_has_epis").select(`
+      id_entrega_func,
+      data_entrega,
+      data_devolucao,
+      funcionario:funcionario_id (nome, sobrenome, email),
+      epis:epis_id (nome, tipo, codigo_patrimonio)
+    `)
+    .is('data_devolucao', null)
+    .limit(10);
+    
+    if (error) throw error;
+    return data;
+  };
+
+  const getAlunoComEPIsAtrasados = async () => {
+    const { data, error } = await supabase.from("aluno_has_epis").select(`
+      id_entrega_aluno,
+      data_entrega,
+      aluno:aluno_id (nome, sobrenome, email),
+      epis:epis_id (nome, tipo, codigo_patrimonio)
+    `)
+    .limit(10);
+    
+    if (error) throw error;
+    return data || [];
+  };
+
+  const deleteEPI = async (id) => {
+    const { error } = await supabase.from("epis").delete().eq("idepis", id);
+    if (error) throw error;
+    return true;
+  };
+
+  const updateEPI = async (id, epi) => {
+    const { data, error } = await supabase.from("epis").update(epi).eq("idepis", id);
+    if (error) throw error;
+    return data;
+  };
+
   return {
     supabase,
     session,
@@ -208,5 +308,13 @@ export function useSupabase() {
     addEntregaAluno,
     getMatriculas,
     addMatricula,
+    getDashboardStats,
+    getEntregasRecentes,
+    getEstoquePerTipo,
+    alertasEPIs,
+    getFuncionarioComEPIs,
+    getAlunoComEPIsAtrasados,
+    deleteEPI,
+    updateEPI
   };
 }

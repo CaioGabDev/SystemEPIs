@@ -2,13 +2,17 @@
   <header class="header">
     <div class="logo-container">
       <div class="logo-icon">
-        <img 
+        <router-link to="/" class="text-link">
+          <img 
           :src="imageIcon" 
           alt="Ilustração Icone da equipe" 
           class="icon-placeholder"
         />
+        </router-link>
       </div>
+      <router-link to="/" class="text-link">
       <h2 class="logo-text">DashEPI</h2>
+      </router-link>
     </div>
 
     <nav>
@@ -55,11 +59,18 @@ import imageIcon from '../assets/logo empresa.png'
 
 .logo-icon {
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
+  width: 1rem;
+  height: 1rem;
   display: flex;
   justify-content: center;
   align-items: center; 
+  margin-left: 0.5rem; 
+  margin-right: 1.7rem;
+}
+
+.text-link {
+  text-decoration: none;
+  text-decoration-line: none;
 }
 
 .logo-icon img {
@@ -71,6 +82,7 @@ import imageIcon from '../assets/logo empresa.png'
   font-size: 1.5rem;
   font-weight: bold;
   margin: 0;
+  color:white;
 }
 
 .user-container {
