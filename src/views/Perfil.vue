@@ -11,9 +11,14 @@
                             <p class="turma-label">Turma: {{ turmaNome || "Sem turma" }}</p>
                         </div>
                         <div class="profile-actions">
-                            <button v-if="!editMode" class="edit-btn" @click="editProfile">
-                                Editar Perfil
-                            </button>
+                            <div v-if="!editMode" class="action-buttons-group">
+                                <button class="edit-btn" @click="editProfile">
+                                    Editar Perfil
+                                </button>
+                                <button class="logout-btn" @click="handleLogout" title="Deslogar da conta">
+                                    Sair da Conta
+                                </button>
+                            </div>
                             <div v-else class="edit-actions">
                                 <button class="save-btn" @click="saveProfile">Salvar</button>
                                 <button class="cancel-btn" @click="cancelEdit">Cancelar</button>
@@ -150,19 +155,39 @@
 <script setup>
 import HeaderGeral from "../components/HeaderGeral.vue";
 import { ref, computed, onMounted, watch } from "vue";
+// ==========================================
+// IMPORTAÇÕES E COMPOSABLES
+// ==========================================
+// Importa o composable de Supabase que contém todas as funções de autenticação
 import { useSupabase } from "../composables/useSupabase";
+// Importa o router do Vue para navegação entre páginas
 import { useRouter } from "vue-router";
 
-const { session, supabase } = useSupabase();
+// ==========================================
+// INICIALIZAÇÃO DAS FUNÇÕES
+// ==========================================
+// Desestrutura as funções e estado do Supabase
+const { session, supabase, signOut } = useSupabase();
 const router = useRouter();
 
+// ==========================================
+// DADOS REATIVOS DO PERFIL
+// ==========================================
+// Armazena os dados do usuário logado
 const user = ref(null);
+// Armazena o nome da turma do aluno
 const turmaNome = ref("");
+// Armazena EPIs já entregues ao usuário
 const episAssigned = ref([]);
+// Armazena todos os EPIs disponíveis
 const episAvailable = ref([]);
+// Campo para filtrar EPIs
 const filterQuery = ref("");
+// Flag para controlar carregamento de dados
 const loading = ref(true);
+// Flag para controlar modo de edição
 const editMode = ref(false);
+// Armazena dados do perfil para edição
 const profileData = ref({
     nome: "",
     sobrenome: "",
@@ -172,16 +197,22 @@ const profileData = ref({
     data_nascimento: "",
 });
 
+// ==========================================
+// COMPUTED PROPERTIES - DADOS COMPUTADOS
+// ==========================================
+// Calcula o nome completo do usuário dinamicamente
 const profileName = computed(() => {
     if (!user.value) return "Carregando...";
     return `${user.value.nome || ""} ${user.value.sobrenome || ""}`.trim();
 });
 
+// Formata data para o padrão brasileiro (dd/mm/yyyy)
 const formatDate = (value) => {
     if (!value) return "--";
     return new Date(value).toLocaleDateString("pt-BR");
 };
 
+// Filtra EPIs disponíveis baseado no campo de busca
 const filteredEpis = computed(() => {
     const query = filterQuery.value.toLowerCase().trim();
     if (!query) return episAvailable.value;
@@ -190,6 +221,10 @@ const filteredEpis = computed(() => {
     );
 });
 
+// ==========================================
+// FUNÇÕES DE MANIPULAÇÃO DO FORMULÁRIO
+// ==========================================
+// Preenche o formulário com os dados atuais do usuário
 const setProfileForm = () => {
     if (!user.value) return;
     profileData.value = {
@@ -202,20 +237,27 @@ const setProfileForm = () => {
     };
 };
 
+// Ativa o modo de edição
 const editProfile = () => {
     editMode.value = true;
     setProfileForm();
 };
 
+// Cancela a edição e revert dados originais
 const cancelEdit = () => {
     editMode.value = false;
     setProfileForm();
 };
 
+// ==========================================
+// FUNÇÃO DE ATUALIZAR PERFIL
+// ==========================================
+// Salva as alterações do perfil no banco de dados
 const saveProfile = async () => {
     if (!user.value) return;
 
     try {
+        // Prepara os dados para atualizar
         const updateData = {
             nome: profileData.value.nome,
             sobrenome: profileData.value.sobrenome,
@@ -230,6 +272,7 @@ const saveProfile = async () => {
         const idField = isAluno ? "idaluno" : "idfuncionario";
         const idValue = isAluno ? user.value.idaluno : user.value.idfuncionario;
 
+        // Executa a atualização no banco
         const { data: updated, error } = await supabase
             .from(tableName)
             .update(updateData)
@@ -239,6 +282,7 @@ const saveProfile = async () => {
 
         if (error) throw error;
 
+        // Atualiza o objeto user com os novos dados
         user.value = { ...user.value, ...updated };
         editMode.value = false;
         setProfileForm();
@@ -249,8 +293,46 @@ const saveProfile = async () => {
     }
 };
 
+// ==========================================
+// FUNÇÃO DE LOGOUT - DESLOGAR DA CONTA
+// ==========================================
+// Esta função é responsável por fazer o logout do usuário
+// Quando chamada, limpa a sessão do Supabase e remove dados do localStorage
+const handleLogout = async () => {
+    try {
+        // Pede confirmação ao usuário antes de fazer logout
+        const confirmar = window.confirm("Tem certeza que deseja fazer logout?");
+        
+        if (!confirmar) {
+            return; // Se o usuário cancelar, não faz nada
+        }
+
+        // Chama a função signOut do Supabase
+        // Isso:
+        // 1. Invalida o token de autenticação no servidor
+        // 2. Remove os dados da sessão do localStorage
+        // 3. Limpa o estado da sessão
+        await signOut();
+        
+        // Mostra mensagem de sucesso
+        alert("Logout realizado com sucesso!");
+        
+        // Redireciona o usuário para a página de login
+        router.push("/login");
+    } catch (error) {
+        console.error("Erro ao fazer logout:", error);
+        alert("Erro ao fazer logout: " + error.message);
+    }
+};
+
+// ==========================================
+// FUNÇÃO DE CARREGAR PERFIL
+// ==========================================
+// Carrega todos os dados do perfil do usuário logado
 const loadProfile = async () => {
+    // Verifica se o usuário está autenticado
     if (!session.value || !session.value.user?.email) {
+        // Se não estiver, redireciona para login
         router.push("/login");
         return;
     }
@@ -262,6 +344,7 @@ const loadProfile = async () => {
     let userData = null;
     let isAlunoUser = false;
 
+    // Busca o usuário na tabela de alunos
     const { data: alunoData, error: alunoError } = await supabase
         .from("aluno")
         .select("*")
@@ -289,7 +372,7 @@ const loadProfile = async () => {
         return;
     }
 
-    // Enriquece dados com metadata
+    // Enriquece dados com metadata armazenada durante o login
     user.value = {
         ...userData,
         nome: userData.nome || metadata.nome || '',
@@ -377,30 +460,73 @@ watch(session, () => {
     align-items: center;
 }
 
+/* ========================================== */
+/* ESTILOS DOS BOTÕES DE AÇÃO */
+/* ========================================== */
+.action-buttons-group {
+    display: flex;
+    gap: 0.8rem;
+    align-items: center;
+}
+
 .edit-btn,
 .save-btn,
-.cancel-btn {
+.cancel-btn,
+.logout-btn {
     border: none;
     border-radius: 999px;
     padding: 0.65rem 1rem;
     font-weight: 600;
     cursor: pointer;
+    transition: all 0.3s ease;
 }
 
+/* Botão Editar - cor laranja */
 .edit-btn {
     background: #f05432;
     color: white;
 }
 
+.edit-btn:hover {
+    background: #e74821;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(240, 84, 50, 0.3);
+}
+
+/* Botão Logout - cor vermelha para indicar saída da conta */
+.logout-btn {
+    background: #dc2626;
+    color: white;
+}
+
+.logout-btn:hover {
+    background: #b91c1c;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+}
+
+/* Botão Salvar - cor verde */
 .save-btn {
     background: #1f6b3c;
     color: white;
 }
 
+.save-btn:hover {
+    background: #15803d;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(31, 107, 60, 0.3);
+}
+
+/* Botão Cancelar - transparente com borda */
 .cancel-btn {
     background: transparent;
     color: #cbd5e1;
     border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.3);
 }
 
 .info-value {
