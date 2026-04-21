@@ -7,6 +7,9 @@ import Dashboard from '../views/Dashboard.vue'
 import DashboardAluno from '../views/DashboardAluno.vue'
 import EPIs from '../views/EPIs.vue'
 import Perfil from '../views/Perfil.vue'
+import CatalogoEPIs from '../views/CatalogoEPIs.vue'
+import MinhasSolicitacoes from '../views/MinhasSolicitacoes.vue'
+import GerenciarSolicitacoes from '../views/GerenciarSolicitacoes.vue'
 import { useSupabase } from '../composables/useSupabase'
 
 
@@ -43,10 +46,25 @@ const routes = [
     component: EPIs,
     meta: { requiresAuth: true, requiresAdmin: true }
   },
+  { 
+    path: '/gerenciar-solicitacoes', 
+    component: GerenciarSolicitacoes,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
   // ROTAS PROTEGIDAS - APENAS ALUNO
   { 
     path: '/dashboard-aluno', 
     component: DashboardAluno,
+    meta: { requiresAuth: true, requiresAluno: true }
+  },
+  { 
+    path: '/catalogo-epis', 
+    component: CatalogoEPIs,
+    meta: { requiresAuth: true, requiresAluno: true }
+  },
+  { 
+    path: '/minhas-solicitacoes', 
+    component: MinhasSolicitacoes,
     meta: { requiresAuth: true, requiresAluno: true }
   },
   // ROTAS PROTEGIDAS - QUALQUER USUÁRIO AUTENTICADO

@@ -22,6 +22,9 @@
       <router-link to="/epis" class="nav-dashboard">
         <h1>EPIs</h1>
       </router-link>
+      <router-link to="/gerenciar-solicitacoes" class="nav-dashboard">
+        <h1>Solicitações</h1>
+      </router-link>
       <router-link to="/cadastrar" class="nav-dashboard">
         <h1>Cadastrar</h1>
       </router-link>

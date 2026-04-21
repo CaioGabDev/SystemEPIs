@@ -1,11 +1,24 @@
 <template>
     <div class="perfil-page">
-        <HeaderGeral />
+        <HeaderAluno v-if="isAluno" />
+        <HeaderGeral v-else />
         <main class="perfil-main">
-            <section class="top-panel">
+            <SidebarAluno v-if="isAluno" />
+            <section class="content">
+                <div class="content-header">
+                    <h1>{{ isAluno ? 'Perfil do Aluno' : 'Perfil do Funcionário' }}</h1>
+                    <p>Gerencie suas informações pessoais</p>
+                </div>
                 <div class="profile-card">
                     <div class="profile-card-header">
-                        <div class="avatar">👤</div>
+                        <div class="avatar-section">
+                            <div class="avatar">
+                                <img v-if="user?.foto" :src="user.foto" alt="Foto do perfil">
+                                <i v-else class="fas fa-user"></i>
+                            </div>
+                            <button @click="changePhoto" class="change-photo-btn">Alterar Foto</button>
+                            <input ref="photoInput" type="file" @change="handlePhotoChange" accept="image/*" style="display: none;">
+                        </div>
                         <div class="profile-info">
                             <h1>{{ profileName }}</h1>
                             <p class="turma-label">Turma: {{ turmaNome || "Sem turma" }}</p>
@@ -54,6 +67,12 @@
                                         }}</strong>
                                 </div>
                             </div>
+                            <div v-if="isAluno" class="info-row">
+                                <span>Turma</span>
+                                <div class="info-value">
+                                    <strong>{{ turmaNome || "---" }}</strong>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="info-box">
@@ -84,10 +103,12 @@
                         <div class="info-box">
                             <h2>Segurança e Acesso</h2>
                             <div class="info-row">
-                                <span>Função</span><strong>Aluno</strong>
+                                <span>Função</span><strong>{{ isAluno ? 'Aluno' : 'Funcionário' }}</strong>
                             </div>
-                            <div class="info-row">
-                                <span>Senha</span><strong>********</strong>
+                            <div class="password-section">
+                                <button @click="showPasswordModal = true" class="change-password-btn">
+                                    Alterar Senha
+                                </button>
                             </div>
                             <div class="info-row">
                                 <span>Status</span><strong>Ativo</strong>
@@ -96,55 +117,28 @@
                     </div>
                 </div>
 
-                <div class="epis-panel">
-                    <div class="epis-header">
-                        <h2>Seus EPIs</h2>
-                        <p>Itens que já estão vinculados ao seu perfil</p>
-                    </div>
-                    <div class="epis-list">
-                        <div v-if="episAssigned.length === 0" class="epi-empty">
-                            Nenhum EPI registrado ainda.
-                        </div>
-                        <div v-for="item in episAssigned" :key="item.id_entrega_aluno" class="epi-card">
-                            <div class="epi-card-title">{{ item.epis?.nome || "EPI" }}</div>
-                            <div class="epi-card-subtitle">
-                                {{ item.epis?.tipo || "Tipo não informado" }}
+                <!-- Modal para alterar senha -->
+                <div v-if="showPasswordModal" class="modal-overlay" @click="showPasswordModal = false">
+                    <div class="modal-content" @click.stop>
+                        <h3>Alterar Senha</h3>
+                        <form @submit.prevent="changePassword">
+                            <div class="form-group">
+                                <label>Senha Atual</label>
+                                <input v-model="passwordData.current" type="password" required>
                             </div>
-                            <div class="epi-status" :class="item.epis?.disponivel
-                                    ? 'status-disponivel'
-                                    : 'status-indisponivel'
-                                ">
-                                {{ item.epis?.disponivel ? "Disponível" : "Indisponível" }}
+                            <div class="form-group">
+                                <label>Nova Senha</label>
+                                <input v-model="passwordData.new" type="password" required>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <section class="solicitacoes-section">
-                <div class="section-header">
-                    <div>
-                        <h2>Minhas Solicitações</h2>
-                        <p>Veja o status dos EPIs que você pode solicitar.</p>
-                    </div>
-                    <div class="filter-box">
-                        <input v-model="filterQuery" placeholder="Filtrar" />
-                    </div>
-                </div>
-
-                <div class="request-list">
-                    <div v-for="epi in filteredEpis" :key="epi.idepis" class="request-item">
-                        <div class="request-left">
-                            <span class="request-name">{{ epi.nome }}</span>
-                            <span class="request-type">{{ epi.tipo || "EPI" }}</span>
-                        </div>
-                        <div class="request-status" :class="epi.disponivel ? 'status-disponivel' : 'status-indisponivel'
-                            ">
-                            {{ epi.disponivel ? "Disponível" : "Indisponível" }}
-                        </div>
-                    </div>
-                    <div v-if="filteredEpis.length === 0" class="empty-state">
-                        Nenhuma solicitação encontrada.
+                            <div class="form-group">
+                                <label>Confirmar Nova Senha</label>
+                                <input v-model="passwordData.confirm" type="password" required>
+                            </div>
+                            <div class="modal-actions">
+                                <button type="button" @click="showPasswordModal = false" class="cancel-btn">Cancelar</button>
+                                <button type="submit" class="save-btn">Alterar Senha</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </section>
@@ -153,7 +147,9 @@
 </template>
 
 <script setup>
+import HeaderAluno from "../components/HeaderAluno.vue";
 import HeaderGeral from "../components/HeaderGeral.vue";
+import SidebarAluno from "../components/SidebarAluno.vue";
 import { ref, computed, onMounted, watch } from "vue";
 // ==========================================
 // IMPORTAÇÕES E COMPOSABLES
@@ -175,6 +171,8 @@ const router = useRouter();
 // ==========================================
 // Armazena os dados do usuário logado
 const user = ref(null);
+// Flag para indicar se é aluno ou funcionário
+const isAluno = ref(false);
 // Armazena o nome da turma do aluno
 const turmaNome = ref("");
 // Armazena EPIs já entregues ao usuário
@@ -196,6 +194,15 @@ const profileData = ref({
     cpf: "",
     data_nascimento: "",
 });
+// Modal para alterar senha
+const showPasswordModal = ref(false);
+const passwordData = ref({
+    current: '',
+    new: '',
+    confirm: ''
+});
+// Ref para input de foto
+const photoInput = ref(null);
 
 // ==========================================
 // COMPUTED PROPERTIES - DADOS COMPUTADOS
@@ -294,6 +301,77 @@ const saveProfile = async () => {
 };
 
 // ==========================================
+// FUNÇÕES PARA ALTERAR SENHA E FOTO
+// ==========================================
+const changePassword = async () => {
+    if (passwordData.value.new !== passwordData.value.confirm) {
+        alert('As senhas não coincidem!');
+        return;
+    }
+
+    try {
+        const { error } = await supabase.auth.updateUser({
+            password: passwordData.value.new
+        });
+
+        if (error) throw error;
+
+        alert('Senha alterada com sucesso!');
+        showPasswordModal.value = false;
+        passwordData.value = { current: '', new: '', confirm: '' };
+    } catch (error) {
+        console.error('Erro ao alterar senha:', error);
+        alert('Erro ao alterar senha: ' + error.message);
+    }
+};
+
+const changePhoto = () => {
+    photoInput.value?.click();
+};
+
+const handlePhotoChange = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+        // Upload da imagem para Supabase Storage
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${session.value.user.id}.${fileExt}`;
+        const filePath = `profile-photos/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+            .from('avatars')
+            .upload(filePath, file, { upsert: true });
+
+        if (uploadError) throw uploadError;
+
+        // Obter URL pública
+        const { data } = supabase.storage
+            .from('avatars')
+            .getPublicUrl(filePath);
+
+        // Atualizar no banco
+        const isAluno = user.value.idaluno !== undefined;
+        const tableName = isAluno ? "aluno" : "funcionario";
+        const idField = isAluno ? "idaluno" : "idfuncionario";
+        const idValue = isAluno ? user.value.idaluno : user.value.idfuncionario;
+
+        const { error: updateError } = await supabase
+            .from(tableName)
+            .update({ foto: data.publicUrl })
+            .eq(idField, idValue);
+
+        if (updateError) throw updateError;
+
+        user.value.foto = data.publicUrl;
+        alert('Foto atualizada com sucesso!');
+    } catch (error) {
+        console.error('Erro ao atualizar foto:', error);
+        alert('Erro ao atualizar foto: ' + error.message);
+    }
+};
+
+// ==========================================
 // FUNÇÃO DE LOGOUT - DESLOGAR DA CONTA
 // ==========================================
 // Esta função é responsável por fazer o logout do usuário
@@ -380,6 +458,7 @@ const loadProfile = async () => {
         email: userData.email || email,
     };
 
+    isAluno.value = isAlunoUser;
     setProfileForm();
 
     // Carrega dados relacionados apenas para alunos
@@ -420,21 +499,184 @@ watch(session, () => {
 <style scoped>
 .perfil-page {
     min-height: 100vh;
-    background: #1f2532;
+    background: #293140;
     color: #edf2f7;
 }
 
 .perfil-main {
-    width: min(1200px, 100%);
-    margin: 0 auto;
-    padding: 2rem 2rem 4rem;
+    display: flex;
+    min-height: calc(100vh - 80px);
+}
+
+.content {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.content-header {
+    margin-bottom: 20px;
+}
+
+.content-header h1 {
+    color: white;
+    font-size: 2rem;
+    margin-bottom: 5px;
+}
+
+.content-header p {
+    color: rgba(255, 255, 255, 0.8);
 }
 
 .top-panel {
-    display: grid;
-    grid-template-columns: 1.4fr 1fr;
-    gap: 2rem;
+    display: block;
     margin-bottom: 2.5rem;
+}
+
+.avatar-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    overflow: hidden;
+}
+
+.avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.change-photo-btn {
+    padding: 8px 16px;
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.3s;
+}
+
+.change-photo-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.password-section {
+    margin: 15px 0;
+}
+
+.change-password-btn {
+    padding: 10px 20px;
+    background: #f05432;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.3s;
+}
+
+.change-password-btn:hover {
+    background: #e03e1f;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: #262c3d;
+    border-radius: 12px;
+    padding: 20px;
+    width: 90%;
+    max-width: 400px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.modal-content h3 {
+    color: white;
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    color: rgba(255, 255, 255, 0.8);
+    margin-bottom: 5px;
+    font-size: 0.9rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    font-size: 0.9rem;
+}
+
+.form-group input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
+.modal-actions button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.3s;
+}
+
+.modal-actions .cancel-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+.modal-actions .cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.modal-actions .save-btn {
+    background: #f05432;
+    color: white;
+}
+
+.modal-actions .save-btn:hover {
+    background: #e03e1f;
 }
 
 .profile-card,
