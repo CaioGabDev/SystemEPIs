@@ -42,27 +42,34 @@
 import imageIcon from '../assets/logo empresa.png'
 import imageLogin from '../assets/PaginaLogin.png'
 import { ref } from 'vue'
+// importa a função de login do supabase
 import { useSupabase } from '../composables/useSupabase'
 import { useRouter } from 'vue-router'
 
+// pega a função de login do supabase
 const { signIn } = useSupabase()
 const router = useRouter()
 
+// armazena o email digitado
 const email = ref('')
+// armazena a senha digitada
 const password = ref('')
 
+// função que faz o login do usuário
 const handleLogin = async () => {
   try {
+    // chama a função de login no supabase
     const response = await signIn(email.value, password.value)
-    const tipoUsuario = response?.tipo || 'aluno' // Padrão: aluno
+    // pega o tipo de usuário (aluno, funcionario ou admin)
+    const tipoUsuario = response?.tipo || 'aluno' // padrão é aluno
     
     console.log('Login bem-sucedido. Tipo:', tipoUsuario)
     
-    // Redireciona conforme o tipo
+    // redireciona para a página correta conforme o tipo de usuário
     if (tipoUsuario === 'funcionario' || tipoUsuario === 'admin') {
-      router.push('/dashboard') // Dashboard de admin/funcionário
+      router.push('/dashboard') // página do admin e funcionário
     } else {
-      router.push('/dashboard-aluno') // Dashboard de aluno
+      router.push('/dashboard-aluno') // página do aluno
     }
   } catch (error) {
     alert('Erro no login: ' + error.message)

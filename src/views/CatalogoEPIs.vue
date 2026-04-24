@@ -59,34 +59,48 @@
 import { ref, computed, onMounted } from 'vue'
 import HeaderAluno from '../components/HeaderAluno.vue'
 import SidebarAluno from '../components/SidebarAluno.vue'
+// importa a função que conecta com o banco de dados
 import { useSupabase } from '../composables/useSupabase'
 
+// pega a conexão com o supabase e a sessão do usuário
 const { supabase, session } = useSupabase()
 
+// armazena todos os epis do banco
 const epis = ref([])
+// armazena o texto que o usuário digita para buscar
 const searchQuery = ref('')
+// armazena qual tipo de epi está filtrado
 const tipoFilter = ref('')
+// armazena qual disponibilidade está filtrada
 const disponibilidadeFilter = ref('')
 
+// filtra os epis de acordo com busca, tipo e disponibilidade
 const filteredEpis = computed(() => {
   return epis.value.filter(epi => {
+    // verifica se o nome ou descrição contém o texto de busca
     const matchesSearch = epi.nome.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
                          epi.descricao.toLowerCase().includes(searchQuery.value.toLowerCase())
+    // verifica se o tipo bate com o filtro selecionado
     const matchesTipo = !tipoFilter.value || epi.tipo === tipoFilter.value
+    // verifica se a disponibilidade bate com o filtro
     const matchesDisponibilidade = !disponibilidadeFilter.value ||
                                    epi.disponivel.toString() === disponibilidadeFilter.value
     return matchesSearch && matchesTipo && matchesDisponibilidade
   })
 })
 
+// busca todos os epis ativos no banco de dados
 const loadEpis = async () => {
   try {
+    // consulta a tabela epis no supabase
     const { data, error } = await supabase
       .from('epis')
       .select('*')
+      // filtra apenas os epis ativos
       .eq('ativo', true)
 
     if (error) throw error
+    // armazena os epis encontrados
     epis.value = data || []
   } catch (error) {
     console.error('Erro ao carregar EPIs:', error)
@@ -94,11 +108,13 @@ const loadEpis = async () => {
   }
 }
 
+// cria uma solicitação de empréstimo para um epi específico
 const solicitarEPI = async (epi) => {
+  // verifica se o epi está disponível antes de permitir solicitar
   if (!epi.disponivel) return
 
   try {
-    // Buscar o ID do aluno
+    // busca o id do aluno logado usando o email
     const userEmail = session.value.user.email;
     const { data: alunoData } = await supabase
       .from('aluno')
@@ -106,24 +122,30 @@ const solicitarEPI = async (epi) => {
       .eq('email', userEmail)
       .single();
 
+    // verifica se o aluno foi encontrado
     if (!alunoData) {
       alert('Perfil do aluno não encontrado');
       return;
     }
 
+    // insere uma nova solicitação no banco de dados
     const { data, error } = await supabase
       .from('solicitacoes')
       .insert({
+        // id do aluno logado
         aluno_id: alunoData.idaluno,
+        // id do epi que está sendo solicitado
         epis_id: epi.idepis,
+        // começa como pendente até ser aprovado
         status: 'pendente',
+        // registra a data de hoje
         data_solicitacao: new Date().toISOString().split('T')[0]
       })
 
     if (error) throw error
 
     alert('Solicitação enviada com sucesso!')
-    // Recarregar EPIs ou atualizar status
+    // recarrega a lista de epis
     loadEpis()
   } catch (error) {
     console.error('Erro ao solicitar EPI:', error)
@@ -131,7 +153,9 @@ const solicitarEPI = async (epi) => {
   }
 }
 
+// executa quando a página carrega
 onMounted(() => {
+  // carrega todos os epis disponíveis
   loadEpis()
 })
 </script>

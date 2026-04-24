@@ -46,12 +46,15 @@
 import imageIcon from '../assets/logo empresa.png'
 import imageLogin from '../assets/PaginaLogin.png'
 import { ref } from 'vue'
+// importa a função que conecta com o banco de dados do supabase
 import { useSupabase } from '../composables/useSupabase'
 import { useRouter } from 'vue-router'
 
+// pega a função de cadastro do supabase
 const { signUp } = useSupabase()
 const router = useRouter()
 
+// armazena os dados digitados do formulário
 const nome = ref('')
 const sobrenome = ref('')
 const cpf = ref('')
@@ -59,30 +62,36 @@ const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 
+// função que faz o cadastro do novo usuário aluno
 const handleCadastro = async () => {
-  // Validações
+  // valida se o nome foi preenchido
   if (!nome.value.trim()) {
     alert('Nome é obrigatório')
     return
   }
+  // valida se o cpf foi preenchido
   if (!cpf.value.trim()) {
     alert('CPF é obrigatório')
     return
   }
+  // valida se o email foi preenchido
   if (!email.value.trim()) {
     alert('E-mail é obrigatório')
     return
   }
+  // valida se a senha tem pelo menos 6 caracteres
   if (password.value.length < 6) {
     alert('Senha deve ter pelo menos 6 caracteres')
     return
   }
+  // valida se as duas senhas são iguais
   if (password.value !== confirmPassword.value) {
     alert('Senhas não coincidem')
     return
   }
   
   try {
+    // prepara os dados do novo usuário
     const userData = {
       type: 'aluno',
       nome: nome.value.trim(),
@@ -93,8 +102,10 @@ const handleCadastro = async () => {
     }
     
     console.log('Enviando dados:', userData)
+    // chama a função do supabase para criar a conta
     await signUp(email.value.trim(), password.value, userData)
     alert('Cadastro realizado com sucesso!')
+    // redireciona para o dashboard do aluno
     router.push('/dashboard-aluno')
   } catch (error) {
     console.error('Erro no cadastro:', error)

@@ -120,21 +120,32 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import HeaderGeral from '../components/HeaderGeral.vue'
+// importa a função que conecta com o banco de dados do supabase
 import { useSupabase } from '../composables/useSupabase'
 import { useRouter } from 'vue-router'
 
+// pega a conexão com o supabase e a sessão do usuário logado
 const { supabase, session } = useSupabase()
 const router = useRouter()
 
+// armazena todas as solicitações de empréstimo
 const solicitacoes = ref([])
+// armazena o texto que o usuário digita para buscar
 const searchQuery = ref('')
+// armazena qual status está selecionado no filtro
 const statusFilter = ref('')
+// controla se está carregando os dados do banco
 const loading = ref(true)
+// controla se a janela de rejeição deve aparecer ou não
 const showRejeitarModal = ref(false)
+// armazena a solicitação selecionada para rejeitar
 const solicitacaoSelecionada = ref(null)
+// armazena o motivo do texto que o usuário digita na rejeição
 const motivoRejeicao = ref('')
+// armazena o id da solicitação que está sendo processada
 const processandoId = ref(null)
 
+// filtra as solicitações de acordo com o texto de busca e o status selecionado
 const filteredSolicitacoes = computed(() => {
   return solicitacoes.value.filter(sol => {
     const matchesSearch = !searchQuery.value || 
@@ -148,11 +159,13 @@ const filteredSolicitacoes = computed(() => {
   })
 })
 
+// converte a data do banco em um formato legível para o usuário
 const formatDate = (dateString) => {
   if (!dateString) return '---'
   return new Date(dateString).toLocaleDateString('pt-BR')
 }
 
+// converte o status da solicitação em um texto mais bonito para mostrar
 const getStatusText = (status) => {
   const statusMap = {
     pendente: 'Pendente',
@@ -164,8 +177,10 @@ const getStatusText = (status) => {
   return statusMap[status] || status
 }
 
+// busca todas as solicitações no banco de dados com os dados do aluno e do epi
 const loadSolicitacoes = async () => {
   try {
+    // consulta a tabela solicitacoes no supabase
     const { data, error } = await supabase
       .from('solicitacoes')
       .select(`
@@ -182,136 +197,181 @@ const loadSolicitacoes = async () => {
           codigo_patrimonio
         )
       `)
+      // ordena as solicitações pela data mais recente primeiro
       .order('data_solicitacao', { ascending: false })
 
     if (error) throw error
+    // armazena os dados das solicitações
     solicitacoes.value = data || []
   } catch (error) {
     console.error('Erro ao carregar solicitações:', error)
     alert('Erro ao carregar solicitações')
   } finally {
+    // marca como carregamento finalizado
     loading.value = false
   }
 }
 
+// aprova uma solicitação de empréstimo de epi
 const aprovarSolicitacao = async (solicitacao) => {
+  // pede confirmação ao usuário antes de aprovar
   if (!confirm(`Aprovar solicitação de ${solicitacao.aluno?.nome}?`)) return
 
+  // marca qual solicitação está sendo processada para desabilitar o botão
   processandoId.value = solicitacao.idsolicitacoes
 
   try {
+    // atualiza o status no banco de dados para aprovado
     const { error } = await supabase
       .from('solicitacoes')
       .update({
         status: 'aprovado',
+        // registra a data de aprovação de hoje
         data_aprovacao: new Date().toISOString().split('T')[0]
       })
+      // encontra a solicitação pelo id
       .eq('idsolicitacoes', solicitacao.idsolicitacoes)
 
     if (error) throw error
 
     alert('Solicitação aprovada com sucesso!')
+    // recarrega a lista de solicitações
     loadSolicitacoes()
   } catch (error) {
     console.error('Erro ao aprovar solicitação:', error)
     alert('Erro ao aprovar solicitação: ' + error.message)
   } finally {
+    // libera o processamento
     processandoId.value = null
   }
 }
 
+// abre a janela para rejeitar uma solicitação
 const abrirRejeitarModal = (solicitacao) => {
+  // armazena qual solicitação vai ser rejeitada
   solicitacaoSelecionada.value = solicitacao
+  // limpa o campo de motivo
   motivoRejeicao.value = ''
+  // mostra a janela
   showRejeitarModal.value = true
 }
 
+// fecha a janela de rejeição
 const fecharRejeitarModal = () => {
+  // esconde a janela
   showRejeitarModal.value = false
+  // limpa os dados
   solicitacaoSelecionada.value = null
   motivoRejeicao.value = ''
 }
 
+// rejeita uma solicitação de empréstimo com motivo
 const confirmarRejeicao = async () => {
+  // verifica se tem uma solicitação selecionada
   if (!solicitacaoSelecionada.value) return
 
+  // marca qual solicitação está sendo processada
   processandoId.value = solicitacaoSelecionada.value.idsolicitacoes
 
   try {
+    // atualiza o status no banco de dados para rejeitado
     const { error } = await supabase
       .from('solicitacoes')
       .update({
         status: 'rejeitado',
+        // salva o motivo que o usuário digitou
         motivo_rejeicao: motivoRejeicao.value || null
       })
+      // encontra a solicitação pelo id
       .eq('idsolicitacoes', solicitacaoSelecionada.value.idsolicitacoes)
 
     if (error) throw error
 
     alert('Solicitação rejeitada com sucesso!')
+    // fecha a janela
     fecharRejeitarModal()
+    // recarrega a lista de solicitações
     loadSolicitacoes()
   } catch (error) {
     console.error('Erro ao rejeitar solicitação:', error)
     alert('Erro ao rejeitar solicitação: ' + error.message)
   } finally {
+    // libera o processamento
     processandoId.value = null
   }
 }
 
+// marca uma solicitação aprovada como entregue
 const marcarEntregue = async (solicitacao) => {
+  // pede confirmação ao usuário
   if (!confirm('Marcar como entregue?')) return
 
+  // marca qual solicitação está sendo processada
   processandoId.value = solicitacao.idsolicitacoes
 
   try {
+    // atualiza o status no banco de dados para entregue
     const { error } = await supabase
       .from('solicitacoes')
       .update({
         status: 'entregue',
+        // registra a data de entrega de hoje
         data_entrega: new Date().toISOString().split('T')[0]
       })
+      // encontra a solicitação pelo id
       .eq('idsolicitacoes', solicitacao.idsolicitacoes)
 
     if (error) throw error
 
     alert('Marcado como entregue!')
+    // recarrega a lista de solicitações
     loadSolicitacoes()
   } catch (error) {
     console.error('Erro ao marcar como entregue:', error)
     alert('Erro: ' + error.message)
   } finally {
+    // libera o processamento
     processandoId.value = null
   }
 }
 
+// marca uma solicitação entregue como devolvida
 const marcarDevolvido = async (solicitacao) => {
+  // pede confirmação ao usuário
   if (!confirm('Marcar como devolvido?')) return
 
+  // marca qual solicitação está sendo processada
   processandoId.value = solicitacao.idsolicitacoes
 
   try {
+    // atualiza o status no banco de dados para devolvido
     const { error } = await supabase
       .from('solicitacoes')
       .update({
         status: 'devolvido',
+        // registra a data de devolução de hoje
         data_devolucao: new Date().toISOString().split('T')[0]
       })
+      // encontra a solicitação pelo id
       .eq('idsolicitacoes', solicitacao.idsolicitacoes)
 
     if (error) throw error
 
     alert('Marcado como devolvido!')
+    // recarrega a lista de solicitações
     loadSolicitacoes()
   } catch (error) {
     console.error('Erro ao marcar como devolvido:', error)
     alert('Erro: ' + error.message)
   } finally {
+    // libera o processamento
     processandoId.value = null
   }
 }
 
+// executa quando a página carregar
 onMounted(() => {
+  // carrega a lista de solicitações quando entra na página
   loadSolicitacoes()
 })
 </script>

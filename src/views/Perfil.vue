@@ -116,8 +116,7 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Modal para alterar senha -->
+                
                 <div v-if="showPasswordModal" class="modal-overlay" @click="showPasswordModal = false">
                     <div class="modal-content" @click.stop>
                         <h3>Alterar Senha</h3>
@@ -151,24 +150,18 @@ import HeaderAluno from "../components/HeaderAluno.vue";
 import HeaderGeral from "../components/HeaderGeral.vue";
 import SidebarAluno from "../components/SidebarAluno.vue";
 import { ref, computed, onMounted, watch } from "vue";
-// ==========================================
-// IMPORTAÇÕES E COMPOSABLES
-// ==========================================
+
 // Importa o composable de Supabase que contém todas as funções de autenticação
 import { useSupabase } from "../composables/useSupabase";
 // Importa o router do Vue para navegação entre páginas
 import { useRouter } from "vue-router";
 
-// ==========================================
-// INICIALIZAÇÃO DAS FUNÇÕES
-// ==========================================
+
 // Desestrutura as funções e estado do Supabase
 const { session, supabase, signOut } = useSupabase();
 const router = useRouter();
 
-// ==========================================
-// DADOS REATIVOS DO PERFIL
-// ==========================================
+
 // Armazena os dados do usuário logado
 const user = ref(null);
 // Flag para indicar se é aluno ou funcionário
@@ -204,9 +197,7 @@ const passwordData = ref({
 // Ref para input de foto
 const photoInput = ref(null);
 
-// ==========================================
-// COMPUTED PROPERTIES - DADOS COMPUTADOS
-// ==========================================
+
 // Calcula o nome completo do usuário dinamicamente
 const profileName = computed(() => {
     if (!user.value) return "Carregando...";
@@ -228,9 +219,6 @@ const filteredEpis = computed(() => {
     );
 });
 
-// ==========================================
-// FUNÇÕES DE MANIPULAÇÃO DO FORMULÁRIO
-// ==========================================
 // Preenche o formulário com os dados atuais do usuário
 const setProfileForm = () => {
     if (!user.value) return;
@@ -256,9 +244,6 @@ const cancelEdit = () => {
     setProfileForm();
 };
 
-// ==========================================
-// FUNÇÃO DE ATUALIZAR PERFIL
-// ==========================================
 // Salva as alterações do perfil no banco de dados
 const saveProfile = async () => {
     if (!user.value) return;
@@ -300,9 +285,7 @@ const saveProfile = async () => {
     }
 };
 
-// ==========================================
-// FUNÇÕES PARA ALTERAR SENHA E FOTO
-// ==========================================
+//Altera senha e foto
 const changePassword = async () => {
     if (passwordData.value.new !== passwordData.value.confirm) {
         alert('As senhas não coincidem!');
@@ -371,9 +354,7 @@ const handlePhotoChange = async (event) => {
     }
 };
 
-// ==========================================
-// FUNÇÃO DE LOGOUT - DESLOGAR DA CONTA
-// ==========================================
+
 // Esta função é responsável por fazer o logout do usuário
 // Quando chamada, limpa a sessão do Supabase e remove dados do localStorage
 const handleLogout = async () => {
@@ -386,7 +367,6 @@ const handleLogout = async () => {
         }
 
         // Chama a função signOut do Supabase
-        // Isso:
         // 1. Invalida o token de autenticação no servidor
         // 2. Remove os dados da sessão do localStorage
         // 3. Limpa o estado da sessão
@@ -403,9 +383,6 @@ const handleLogout = async () => {
     }
 };
 
-// ==========================================
-// FUNÇÃO DE CARREGAR PERFIL
-// ==========================================
 // Carrega todos os dados do perfil do usuário logado
 const loadProfile = async () => {
     // Verifica se o usuário está autenticado

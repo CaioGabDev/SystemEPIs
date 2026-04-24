@@ -172,11 +172,14 @@
 
 <script setup>
 import { ref, computed } from 'vue'
+// importa a função de signup do supabase
 import { useSupabase } from '../composables/useSupabase'
 import HeaderGeral from '../components/HeaderGeral.vue'
 
+// pega a função de cadastro do supabase
 const { signUp } = useSupabase()
 
+// armazena os dados pessoais do funcionário
 const nome = ref('')
 const sobrenome = ref('')
 const cpf = ref('')
@@ -184,23 +187,32 @@ const dataNascimento = ref('')
 const telefone = ref('')
 const funcao = ref('')
 
+// armazena os dados de acesso
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
+// controla se a senha é visível ou não
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
 
+// controla se o funcionário está ativo
 const ativo = ref(true)
+// calcula o status do cadastro dinamicamente
 const statusCadastro = computed(() => {
+  // se faltarem campos obrigatórios, mostra "em progresso"
   if (!nome.value || !cpf.value || !email.value || !password.value) {
     return 'Em progresso'
   }
   return 'Completo'
 })
 
+// formata o cpf automaticamente conforme o usuário digita
 const formatCPF = () => {
+  // remove qualquer caractere que não seja número
   let value = cpf.value.replace(/\D/g, '')
+  // limita a 11 dígitos
   if (value.length > 11) value = value.slice(0, 11)
+  // formata com pontos e traço (xxx.xxx.xxx-xx)
   if (value.length > 8) {
     value = value.slice(0, 3) + '.' + value.slice(3, 6) + '.' + value.slice(6, 9) + '-' + value.slice(9)
   } else if (value.length > 6) {
@@ -211,9 +223,13 @@ const formatCPF = () => {
   cpf.value = value
 }
 
+// formata o telefone automaticamente conforme o usuário digita
 const formatTelefone = () => {
+  // remove qualquer caractere que não seja número
   let value = telefone.value.replace(/\D/g, '')
+  // limita a 11 dígitos
   if (value.length > 11) value = value.slice(0, 11)
+  // formata com parênteses e traço ((xx) xxxxx-xxxx)
   if (value.length > 7) {
     value = '(' + value.slice(0, 2) + ') ' + value.slice(2, 7) + '-' + value.slice(7)
   } else if (value.length > 2) {
@@ -222,23 +238,29 @@ const formatTelefone = () => {
   telefone.value = value
 }
 
+// valida todos os campos do formulário
 const validarForm = () => {
+  // verifica se o nome foi preenchido
   if (!nome.value.trim()) {
     alert('Nome é obrigatório')
     return false
   }
+  // verifica se o cpf foi preenchido e tem o formato correto
   if (!cpf.value.trim() || cpf.value.length < 14) {
     alert('CPF inválido (XXX.XXX.XXX-XX)')
     return false
   }
+  // verifica se o email foi preenchido e tem @
   if (!email.value.trim() || !email.value.includes('@')) {
     alert('E-mail inválido')
     return false
   }
+  // verifica se a senha tem pelo menos 6 caracteres
   if (password.value.length < 6) {
     alert('Senha deve ter no mínimo 6 caracteres')
     return false
   }
+  // verifica se as duas senhas são iguais
   if (password.value !== confirmPassword.value) {
     alert('As senhas não coincidem')
     return false
@@ -246,7 +268,9 @@ const validarForm = () => {
   return true
 }
 
+// função que cadastra um novo funcionário
 const handleCadastro = async () => {
+  // valida todos os campos antes de fazer o cadastro
   if (!validarForm()) return
 
   try {

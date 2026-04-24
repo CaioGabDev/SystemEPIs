@@ -189,19 +189,29 @@
 <script setup>
 import HeaderGeral from '../components/HeaderGeral.vue'
 import { ref, computed, onMounted } from 'vue'
+// importa as funções que interagem com o banco de dados
 import { useSupabase } from '../composables/useSupabase'
 import { jsPDF } from 'jspdf'
 
+// pega as funções para trabalhar com epis
 const { getEPIs, addEPI, deleteEPI } = useSupabase()
 
+// armazena todos os epis
 const epis = ref([])
+// armazena o texto da busca
 const searchQuery = ref('')
+// controla se a modal de cadastro aparece
 const showCadastroModal = ref(false)
+// controla se a modal de filtro aparece
 const showFiltroModal = ref(false)
+// armazena qual menu de ações está aberto
 const activeMenu = ref(null)
+// armazena qual tipo está selecionado no filtro
 const filtroTipo = ref('')
+// armazena qual disponibilidade está selecionada no filtro
 const filtroDisponibilidade = ref('')
 
+// armazena as estatísticas dos epis
 const stats = ref({
   total: 0,
   emEstoque: 0,
@@ -209,6 +219,7 @@ const stats = ref({
   vencidos: 0
 })
 
+// armazena os dados do novo epi que será cadastrado
 const novoEPI = ref({
   nome: '',
   tipo: '',
@@ -218,14 +229,17 @@ const novoEPI = ref({
   disponivel: true
 })
 
+// extrai todos os tipos únicos de epis e ordena alfabeticamente
 const tiposUnicos = computed(() => {
   const tipos = [...new Set(epis.value.map(epi => epi.tipo).filter(Boolean))]
   return tipos.sort()
 })
 
+// filtra os epis de acordo com busca, tipo e disponibilidade
 const filteredEPIs = computed(() => {
   let resultado = epis.value
 
+  // filtra pela busca de texto
   if (searchQuery.value.trim()) {
     const query = searchQuery.value.toLowerCase()
     resultado = resultado.filter(epi => 
@@ -235,10 +249,12 @@ const filteredEPIs = computed(() => {
     )
   }
 
+  // filtra pelo tipo selecionado
   if (filtroTipo.value) {
     resultado = resultado.filter(epi => epi.tipo === filtroTipo.value)
   }
 
+  // filtra pela disponibilidade
   if (filtroDisponibilidade.value !== '') {
     const disponivel = filtroDisponibilidade.value === 'sim'
     resultado = resultado.filter(epi => epi.disponivel === disponivel)
@@ -247,16 +263,23 @@ const filteredEPIs = computed(() => {
   return resultado
 })
 
+// calcula as estatísticas dos epis (total, estoque, em uso, vencidos)
 const calcularStats = () => {
+  // conta o total de epis
   const total = epis.value.length
+  // conta quantos epis tem quantidade maior que 0
   const emEstoque = epis.value.filter(e => e.quantidade && e.quantidade > 0).length
+  // conta quantos epis estão sendo usados
   const emUso = epis.value.reduce((acc, e) => acc + (e.quantidade > 0 ? 1 : 0), 0)
   
+  // pega a data de hoje
   const hoje = new Date().toISOString().split('T')[0]
+  // conta quantos epis já venceram
   const vencidos = epis.value.filter(e => 
     e.data_validade && e.data_validade < hoje
   ).length
 
+  // atualiza as estatísticas
   stats.value = {
     total,
     emEstoque,
@@ -265,13 +288,18 @@ const calcularStats = () => {
   }
 }
 
+// retorna a classe css de acordo com o status do epi
 const getStatusClass = (epi) => {
+  // verifica se está indisponível
   if (!epi.disponivel) return 'indisponivel'
+  // verifica se tem estoque zerado
   if (epi.quantidade === 0) return 'sem-estoque'
+  // verifica se já venceu
   if (epi.data_validade && epi.data_validade < new Date().toISOString().split('T')[0]) return 'vencido'
   return 'disponivel'
 }
 
+// converte o status do epi em um texto legivel
 const getStatusText = (epi) => {
   if (!epi.disponivel) return 'Indisponível'
   if (epi.quantidade === 0) return 'Sem estoque'
@@ -286,7 +314,9 @@ const formatCurrency = (value) => {
   }).format(value || 0)
 }
 
+// abre a modal para cadastrar novo epi
 const openCadastroModal = () => {
+  // reseta os dados do formulario
   novoEPI.value = {
     nome: '',
     tipo: '',
@@ -295,6 +325,7 @@ const openCadastroModal = () => {
     data_validade: null,
     disponivel: true
   }
+  // mostra a modal
   showCadastroModal.value = true
 }
 

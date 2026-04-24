@@ -36,16 +36,20 @@
 import { ref, onMounted } from 'vue'
 import HeaderAluno from '../components/HeaderAluno.vue'
 import SidebarAluno from '../components/SidebarAluno.vue'
+// importa a função que conecta com o banco de dados do supabase
 import { useSupabase } from '../composables/useSupabase'
 
+// pega a conexão com o supabase e a sessão do usuário
 const { supabase, session } = useSupabase()
 
-const solicitacoes = ref([])
+// armazena todas as solicitações do aluno
 
+// carrega todas as solicitações do aluno logado
 const loadSolicitacoes = async () => {
   try {
-    // Buscar o ID do aluno
+    // pega o email do usuário logado
     const userEmail = session.value.user.email;
+    // busca o id do aluno usando o email
     const { data: alunoData } = await supabase
       .from('aluno')
       .select('idaluno')
@@ -57,6 +61,7 @@ const loadSolicitacoes = async () => {
       return;
     }
 
+    // busca todas as solicitações do aluno
     const { data, error } = await supabase
       .from('solicitacoes')
       .select(`
@@ -67,9 +72,11 @@ const loadSolicitacoes = async () => {
         )
       `)
       .eq('aluno_id', alunoData.idaluno)
+      // ordena pela data mais recente primeiro
       .order('data_solicitacao', { ascending: false })
 
     if (error) throw error
+    // armazena as solicitações encontradas
     solicitacoes.value = data || []
   } catch (error) {
     console.error('Erro ao carregar solicitações:', error)
@@ -77,11 +84,13 @@ const loadSolicitacoes = async () => {
   }
 }
 
+// converte string de data em formato legível
 const formatDate = (dateString) => {
   if (!dateString) return ''
   return new Date(dateString).toLocaleDateString('pt-BR')
 }
 
+// retorna a classe css de acordo com o status
 const getStatusClass = (status) => {
   switch (status) {
     case 'pendente': return 'status-pendente'
@@ -92,6 +101,7 @@ const getStatusClass = (status) => {
   }
 }
 
+// converte o status em um texto legível
 const getStatusText = (status) => {
   switch (status) {
     case 'pendente': return 'Pendente'
@@ -102,13 +112,14 @@ const getStatusText = (status) => {
   }
 }
 
+// executa quando a página carrega
 onMounted(() => {
+  // carrega as solicitações do aluno
   loadSolicitacoes()
 })
 </script>
 
 <style scoped>
-/* Estilos similares */
 .minhas-solicitacoes {
   min-height: 100vh;
   background-color: #293140;

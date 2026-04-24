@@ -185,6 +185,7 @@ const cardsEPI = ref({
   ]
 })
 
+// armazena os dados do formulário de contato
 const formData = ref({
   name: '',
   email: '',
@@ -193,9 +194,13 @@ const formData = ref({
   terms: false
 })
 
+// função que trata o envio do formulário de contato
 const handleSubmit = () => {
+  // registra os dados no console (para debug)
   console.log('Formulário enviado:', formData.value)
+  // mostra mensagem de sucesso ao usuário
   alert('Mensagem enviada com sucesso! Entraremos em contato em breve.')
+  // limpa o formulário
   formData.value = {
     name: '',
     email: '',

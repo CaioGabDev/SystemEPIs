@@ -80,40 +80,52 @@
 import { ref, onMounted, computed } from 'vue'
 import HeaderAluno from '../components/HeaderAluno.vue'
 import SidebarAluno from '../components/SidebarAluno.vue'
+// importa a função que conecta com o banco de dados do supabase
 import { useSupabase } from '../composables/useSupabase'
 import { useRouter } from 'vue-router'
 
+// pega a conexão com supabase, sessão do usuário e função de logout
 const { supabase, session, signOut } = useSupabase()
 const router = useRouter()
 
+// armazena os epis que estão com o aluno agora
 const episAtribuidos = ref([])
+// armazena todas as solicitações do aluno
 const solicitacoes = ref([])
+// armazena os epis que estão perto de vencer (em 30 dias)
 const episVencendo = ref([])
 
+// filtra apenas as solicitações que estão pendentes
 const solicitacoesPendente = computed(() => {
   return solicitacoes.value.filter(sol => sol.status === 'pendente')
 })
 
+// cria uma lista com os ultimos 5 acontecimentos do aluno
 const recentActivities = computed(() => {
   const activities = []
   
+  // pega as ultimas 5 solicitações do aluno
   solicitacoes.value.slice(0, 5).forEach(sol => {
     activities.push({
       id: `sol-${sol.idsolicitacoes}`,
       description: `Solicitação de ${sol.epis?.nome || 'EPI'}`,
       date: sol.data_solicitacao,
+      // muda o ícone de acordo com o status
       icon: sol.status === 'aprovado' ? 'fas fa-check-circle' : 
             sol.status === 'rejeitado' ? 'fas fa-times-circle' : 'fas fa-clock'
     })
   })
 
+  // ordena pela data mais recente primeiro
   return activities.sort((a, b) => new Date(b.date) - new Date(a.date))
 })
 
+// carrega todos os dados do dashboard do aluno
 const loadDashboardData = async () => {
   try {
-    // Primeiro, buscar o ID do aluno baseado na sessão
+    // pega o email do usuário logado
     const userEmail = session.value.user.email;
+    // busca o id do aluno usando o email
     const { data: alunoData } = await supabase
       .from('aluno')
       .select('idaluno')
@@ -127,7 +139,7 @@ const loadDashboardData = async () => {
 
     const alunoId = alunoData.idaluno;
 
-    // Carregar EPIs atribuídos
+    // carrega os epis que estão atribuídos ao aluno
     const { data: episData, error: episError } = await supabase
       .from('aluno_has_epis')
       .select(`
@@ -143,7 +155,7 @@ const loadDashboardData = async () => {
     if (episError) throw episError
     episAtribuidos.value = episData || []
 
-    // Carregar solicitações
+    // carrega todas as solicitações do aluno
     const { data: solData, error: solError } = await supabase
       .from('solicitacoes')
       .select(`
@@ -154,18 +166,22 @@ const loadDashboardData = async () => {
         )
       `)
       .eq('aluno_id', alunoId)
+      // ordena pela data mais recente primeiro
       .order('data_solicitacao', { ascending: false })
 
     if (solError) throw solError
     solicitacoes.value = solData || []
 
-    // Verificar EPIs vencendo
+    // verifica quais epis estão vencendo (em até 30 dias)
     episVencendo.value = episAtribuidos.value.filter(epi => {
       if (!epi.epis?.data_validade) return false
+      // pega a data de validade do epi
       const validade = new Date(epi.epis.data_validade)
       const hoje = new Date()
+      // calcula a diferença em dias
       const diffTime = validade - hoje
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+      // retorna true se vencer em até 30 dias e ainda não venceu
       return diffDays <= 30 && diffDays > 0
     })
 
@@ -174,21 +190,27 @@ const loadDashboardData = async () => {
   }
 }
 
+// converte string de data em formato legível
 const formatDate = (dateString) => {
   if (!dateString) return ''
   return new Date(dateString).toLocaleDateString('pt-BR')
 }
 
+// faz o logout do aluno
 const handleLogout = async () => {
   try {
+    // chama a função de logout do supabase
     await signOut()
+    // redireciona para a página de login
     router.push('/login')
   } catch (error) {
     alert('Erro ao desconectar: ' + error.message)
   }
 }
 
+// executa quando a página carrega
 onMounted(() => {
+  // carrega todos os dados do dashboard
   loadDashboardData()
 })
 </script>

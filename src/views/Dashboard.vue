@@ -171,9 +171,11 @@
 <script setup>
 import HeaderGeral from '../components/HeaderGeral.vue'
 import { ref, onMounted } from 'vue'
+// importa as funções que puxam dados do supabase
 import { useSupabase } from '../composables/useSupabase'
 import { jsPDF } from 'jspdf'
 
+// pega as funções para buscar dados do banco de dados
 const { 
   getDashboardStats, 
   getEntregasRecentes, 
@@ -184,43 +186,59 @@ const {
   session 
 } = useSupabase()
 
+// armazena as estatísticas do dashboard (total, disponível, em uso, %)
 const stats = ref({ total: 0, disponivel: 0, emUso: 0, percentualDisponibilidade: 0 })
+// armazena as entregas recentes
 const entregasRecentes = ref([])
+// armazena o estoque por tipo de epi
 const estoque = ref([])
+// armazena os alertas de epis
 const alertas = ref([])
+// armazena os funcionários com epis
 const funcionariosEPIs = ref([])
+// armazena os alunos com epis atrasados
 const alunosEPIs = ref([])
 
+// converte string de data em formato legível
 const formatDate = (date) => {
   if (!date) return '---'
   return new Date(date).toLocaleDateString('pt-BR')
 }
 
+// calcula o percentual de estoque de um epi em relação ao máximo
 const getEstoquePercent = (quantidade) => {
+  // se não houver estoque, retorna 0
   if (!estoque.value.length) return 0
+  // acha a quantidade máxima entre os tipos
   const max = Math.max(...estoque.value.map(e => e.quantidade || 0))
   if (max === 0) return 0
+  // calcula o percentual
   return (quantidade / max) * 100
 }
 
+// gera um relatório em pdf com os dados do dashboard
 const exportarPDF = () => {
   const doc = new jsPDF()
   const pageWidth = doc.internal.pageSize.getWidth()
   const pageHeight = doc.internal.pageSize.getHeight()
   let yPosition = 20
 
+  // define as cores usadas no pdf
   const colorPrimary = [240, 84, 50]
   const colorText = [41, 49, 64]
   const colorGray = [176, 181, 190]
 
+  // desenha o cabeçalho com cor de fundo
   doc.setFillColor(...colorPrimary)
   doc.rect(0, 0, pageWidth, 30, 'F')
 
+  // adiciona o título do relatório
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(24)
   doc.setFont(undefined, 'bold')
   doc.text('Controle Total de EPIs', 14, 20)
 
+  // adiciona a data e hora de geração
   doc.setTextColor(...colorGray)
   doc.setFontSize(10)
   doc.setFont(undefined, 'normal')
