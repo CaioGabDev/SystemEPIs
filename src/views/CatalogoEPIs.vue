@@ -17,7 +17,6 @@
             <option value="Luvas">Luvas</option>
             <option value="Óculos">Óculos</option>
             <option value="Máscara">Máscara</option>
-            <!-- Adicionar mais tipos conforme necessário -->
           </select>
           <select v-model="disponibilidadeFilter" class="filter-select">
             <option value="">Todas as disponibilidades</option>
@@ -79,12 +78,12 @@ const filteredEpis = computed(() => {
   return epis.value.filter(epi => {
     // verifica se o nome ou descrição contém o texto de busca
     const matchesSearch = epi.nome.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-                         epi.descricao.toLowerCase().includes(searchQuery.value.toLowerCase())
+    (epi.descricao && epi.descricao.toLowerCase().includes(searchQuery.value.toLowerCase()))
     // verifica se o tipo bate com o filtro selecionado
     const matchesTipo = !tipoFilter.value || epi.tipo === tipoFilter.value
-    // verifica se a disponibilidade bate com o filtro
+    // verifica se a disponibilidade bate com o filtro (compara boolean com string)
     const matchesDisponibilidade = !disponibilidadeFilter.value ||
-                                   epi.disponivel.toString() === disponibilidadeFilter.value
+    epi.disponivel === (disponibilidadeFilter.value === 'true')
     return matchesSearch && matchesTipo && matchesDisponibilidade
   })
 })

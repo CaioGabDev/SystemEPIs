@@ -43,6 +43,7 @@ import { useSupabase } from '../composables/useSupabase'
 const { supabase, session } = useSupabase()
 
 // armazena todas as solicitações do aluno
+const solicitacoes = ref([])
 
 // carrega todas as solicitações do aluno logado
 const loadSolicitacoes = async () => {

@@ -95,7 +95,6 @@
       </div>
     </main>
 
-    <!-- Modal para rejeição com motivo -->
     <div v-if="showRejeitarModal" class="modal-overlay" @click="fecharRejeitarModal">
       <div class="modal-content" @click.stop>
         <h3>Rejeitar Solicitação</h3>

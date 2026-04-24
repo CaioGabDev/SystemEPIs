@@ -64,12 +64,6 @@ import imageIcon from '../assets/logo empresa.png'
   object-fit: contain;
 }
 
-.icon-placeholder {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-}
-
 .logo-text {
   font-size: 1.5rem;
   font-weight: bold;
