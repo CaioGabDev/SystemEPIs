@@ -6,7 +6,7 @@ import CadastroFuncionario from '../views/CadastroFuncionario.vue'
 import Dashboard from '../views/Dashboard.vue'
 import DashboardAluno from '../views/DashboardAluno.vue'
 import EPIs from '../views/EPIs.vue'
-import Perfil from '../views/Perfil.vue'
+import PerfilAluno from '../views/PerfilAluno.vue'
 import CatalogoEPIs from '../views/CatalogoEPIs.vue'
 import MinhasSolicitacoes from '../views/MinhasSolicitacoes.vue'
 import GerenciarSolicitacoes from '../views/GerenciarSolicitacoes.vue'
@@ -70,7 +70,7 @@ const routes = [
   // ROTAS PROTEGIDAS - QUALQUER USUÁRIO AUTENTICADO
   { 
     path: '/perfil', 
-    component: Perfil,
+    component: PerfilAluno,
     meta: { requiresAuth: true }
   }
 ]

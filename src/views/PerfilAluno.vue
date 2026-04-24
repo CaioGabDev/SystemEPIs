@@ -1,10 +1,11 @@
 <template>
     <div class="perfil-page">
-        <HeaderGeral />
+        <HeaderAluno />
         <main class="perfil-main">
+            <SidebarAluno />
             <section class="content">
                 <div class="content-header">
-                    <h1>Perfil do Funcionário</h1>
+                    <h1>Perfil do Aluno</h1>
                     <p>Gerencie suas informações pessoais</p>
                 </div>
                 <div class="profile-card">
@@ -19,6 +20,7 @@
                         </div>
                         <div class="profile-info">
                             <h1>{{ profileName }}</h1>
+                            <p class="turma-label">Turma: {{ turmaNome || "Sem turma" }}</p>
                         </div>
                         <div class="profile-actions">
                             <div v-if="!editMode" class="action-buttons-group">
@@ -64,6 +66,12 @@
                                         }}</strong>
                                 </div>
                             </div>
+                            <div class="info-row">
+                                <span>Turma</span>
+                                <div class="info-value">
+                                    <strong>{{ turmaNome || "---" }}</strong>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="info-box">
@@ -94,7 +102,7 @@
                         <div class="info-box">
                             <h2>Segurança e Acesso</h2>
                             <div class="info-row">
-                                <span>Função</span><strong>Funcionário</strong>
+                                <span>Função</span><strong>Aluno</strong>
                             </div>
                             <div class="password-section">
                                 <button @click="showPasswordModal = true" class="change-password-btn">
@@ -137,7 +145,8 @@
 </template>
 
 <script setup>
-import HeaderGeral from "../components/HeaderGeral.vue";
+import HeaderAluno from "../components/HeaderAluno.vue";
+import SidebarAluno from "../components/SidebarAluno.vue";
 import { ref, computed, onMounted, watch } from "vue";
 
 // Importa o composable de Supabase que contém todas as funções de autenticação
@@ -153,6 +162,14 @@ const router = useRouter();
 
 // Armazena os dados do usuário logado
 const user = ref(null);
+// Armazena o nome da turma do aluno
+const turmaNome = ref("");
+// Armazena EPIs já entregues ao usuário
+const episAssigned = ref([]);
+// Armazena todos os EPIs disponíveis
+const episAvailable = ref([]);
+// Campo para filtrar EPIs
+const filterQuery = ref("");
 // Flag para controlar carregamento de dados
 const loading = ref(true);
 // Flag para controlar modo de edição
@@ -188,6 +205,15 @@ const formatDate = (value) => {
     if (!value) return "--";
     return new Date(value).toLocaleDateString("pt-BR");
 };
+
+// Filtra EPIs disponíveis baseado no campo de busca
+const filteredEpis = computed(() => {
+    const query = filterQuery.value.toLowerCase().trim();
+    if (!query) return episAvailable.value;
+    return episAvailable.value.filter((epi) =>
+        epi.nome.toLowerCase().includes(query),
+    );
+});
 
 // Preenche o formulário com os dados atuais do usuário
 const setProfileForm = () => {
@@ -228,11 +254,11 @@ const saveProfile = async () => {
             data_nascimento: profileData.value.data_nascimento,
         };
 
-        // Atualiza na tabela de funcionários
+        // Atualiza na tabela de alunos
         const { data: updated, error } = await supabase
-            .from("funcionario")
+            .from("aluno")
             .update(updateData)
-            .eq("idfuncionario", user.value.idfuncionario)
+            .eq("idaluno", user.value.idaluno)
             .select()
             .single();
 
@@ -299,9 +325,9 @@ const handlePhotoChange = async (event) => {
 
         // Atualizar no banco
         const { error: updateError } = await supabase
-            .from("funcionario")
+            .from("aluno")
             .update({ foto: data.publicUrl })
-            .eq("idfuncionario", user.value.idfuncionario);
+            .eq("idaluno", user.value.idaluno);
 
         if (updateError) throw updateError;
 
@@ -354,19 +380,19 @@ const loadProfile = async () => {
     const email = session.value.user.email;
     const metadata = session.value.user.user_metadata || {};
     
-    // Busca o usuário na tabela de funcionários
-    const { data: funcData, error: funcError } = await supabase
-        .from("funcionario")
+    // Busca o usuário na tabela de alunos
+    const { data: alunoData, error: alunoError } = await supabase
+        .from("aluno")
         .select("*")
         .ilike("email", email);
 
-    if (funcError || !funcData || funcData.length === 0) {
-        alert('Perfil de funcionário não encontrado. Você precisa completar seu cadastro.');
-        router.push('/cadastrar');
+    if (alunoError || !alunoData || alunoData.length === 0) {
+        alert('Perfil de aluno não encontrado. Você precisa completar seu cadastro.');
+        router.push('/cadastro');
         return;
     }
 
-    const userData = funcData[0];
+    const userData = alunoData[0];
 
     // Enriquece dados com metadata armazenada durante o login
     user.value = {
@@ -377,6 +403,30 @@ const loadProfile = async () => {
     };
 
     setProfileForm();
+
+    // Carrega dados relacionados do aluno
+    const { data: turmaData } = await supabase
+        .from("aluno_has_turma")
+        .select("turma:turma_id(nome)")
+        .eq("aluno_id", userData.idaluno);
+
+    if (turmaData && turmaData.length > 0) {
+        turmaNome.value = turmaData[0].turma?.nome || '';
+    }
+
+    const { data: entregasData } = await supabase
+        .from("aluno_has_epis")
+        .select("*, epis:epis_id(nome, tipo, disponivel)")
+        .eq("aluno_id", userData.idaluno);
+
+    if (entregasData) {
+        episAssigned.value = entregasData;
+    }
+
+    const { data: episData } = await supabase.from("epis").select("*");
+    if (episData) {
+        episAvailable.value = episData;
+    }
 
     loading.value = false;
 };
@@ -416,12 +466,24 @@ watch(session, () => {
 }
 
 .content-header p {
-    color: rgba(255, 255, 255, 0.8);
+    color: #a0aec0;
+    font-size: 1rem;
 }
 
-.top-panel {
-    display: block;
-    margin-bottom: 2.5rem;
+.profile-card {
+    background: #1a202c;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+}
+
+.profile-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 20px;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #2d3748;
 }
 
 .avatar-section {
@@ -432,15 +494,15 @@ watch(session, () => {
 }
 
 .avatar {
-    width: 80px;
-    height: 80px;
+    width: 100px;
+    height: 100px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.2);
+    background: #2d3748;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 2rem;
     overflow: hidden;
+    border: 3px solid #f44336;
 }
 
 .avatar img {
@@ -449,47 +511,184 @@ watch(session, () => {
     object-fit: cover;
 }
 
+.avatar i {
+    font-size: 2.5rem;
+    color: #f44336;
+}
+
 .change-photo-btn {
-    padding: 8px 16px;
-    background: rgba(255, 255, 255, 0.2);
+    padding: 6px 12px;
+    background: #f44336;
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 0.9rem;
-    transition: background 0.3s;
+    font-size: 0.85rem;
+    transition: background 0.3s ease;
 }
 
 .change-photo-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
+    background: #f44336;
 }
 
-.password-section {
-    margin: 15px 0;
+.profile-info {
+    flex: 1;
+}
+
+.profile-info h1 {
+    color: white;
+    font-size: 1.8rem;
+    margin-bottom: 5px;
+}
+
+.turma-label {
+    color: #a0aec0;
+    font-size: 0.95rem;
+}
+
+.profile-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.action-buttons-group,
+.edit-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.edit-btn,
+.logout-btn,
+.change-password-btn,
+.save-btn,
+.cancel-btn {
+    padding: 10px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.edit-btn {
+    background: #f44336;
+    color: white;
+}
+
+.edit-btn:hover {
+    background: #f44336;
+}
+
+.logout-btn {
+    background: #ff0000;
+    color: white;
+}
+
+.logout-btn:hover {
+    background: #e53e3e;
+}
+
+.save-btn {
+    background: #48bb78;
+    color: white;
+}
+
+.save-btn:hover {
+    background: #38a169;
+}
+
+.cancel-btn {
+    background: #718096;
+    color: white;
+}
+
+.cancel-btn:hover {
+    background: #4a5568;
 }
 
 .change-password-btn {
-    padding: 10px 20px;
-    background: #f05432;
+    background: #ed8936;
     color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    transition: background 0.3s;
 }
 
 .change-password-btn:hover {
-    background: #e03e1f;
+    background: #dd6b20;
+}
+
+.profile-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+}
+
+.info-box {
+    background: #2d3748;
+    padding: 20px;
+    border-radius: 6px;
+}
+
+.info-box h2 {
+    color: #f44336;
+    font-size: 1.1rem;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #f44336;
+    padding-bottom: 10px;
+}
+
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #1a202c;
+}
+
+.info-row:last-child {
+    border-bottom: none;
+}
+
+.info-row span {
+    color: #a0aec0;
+    font-weight: 500;
+}
+
+.info-value {
+    text-align: right;
+    flex: 1;
+    margin-left: 10px;
+}
+
+.info-value strong {
+    color: #e2e8f0;
+}
+
+.info-input {
+    background: #1a202c;
+    color: #e2e8f0;
+    border: 1px solid #4299e1;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 0.95rem;
+}
+
+.info-input:focus {
+    outline: none;
+    border-color: #63b3ed;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+}
+
+.password-section {
+    text-align: center;
+    margin: 10px 0;
 }
 
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -497,18 +696,18 @@ watch(session, () => {
 }
 
 .modal-content {
-    background: #262c3d;
-    border-radius: 12px;
-    padding: 20px;
+    background: #1a202c;
+    padding: 30px;
+    border-radius: 8px;
     width: 90%;
     max-width: 400px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
 }
 
 .modal-content h3 {
     color: white;
     margin-bottom: 20px;
-    text-align: center;
+    font-size: 1.3rem;
 }
 
 .form-group {
@@ -516,396 +715,74 @@ watch(session, () => {
 }
 
 .form-group label {
+    color: #a0aec0;
     display: block;
-    color: rgba(255, 255, 255, 0.8);
     margin-bottom: 5px;
-    font-size: 0.9rem;
+    font-weight: 500;
 }
 
 .form-group input {
     width: 100%;
     padding: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.1);
-    color: white;
-    font-size: 0.9rem;
+    background: #2d3748;
+    color: #e2e8f0;
+    border: 1px solid #4299e1;
+    border-radius: 4px;
+    box-sizing: border-box;
 }
 
-.form-group input::placeholder {
-    color: rgba(255, 255, 255, 0.6);
+.form-group input:focus {
+    outline: none;
+    border-color: #63b3ed;
+    box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
 }
 
 .modal-actions {
     display: flex;
     gap: 10px;
-    justify-content: flex-end;
     margin-top: 20px;
 }
 
 .modal-actions button {
-    padding: 10px 20px;
+    flex: 1;
+    padding: 10px;
     border: none;
-    border-radius: 8px;
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 0.9rem;
-    transition: background 0.3s;
-}
-
-.modal-actions .cancel-btn {
-    background: rgba(255, 255, 255, 0.2);
-    color: white;
-}
-
-.modal-actions .cancel-btn:hover {
-    background: rgba(255, 255, 255, 0.3);
-}
-
-.modal-actions .save-btn {
-    background: #f05432;
-    color: white;
-}
-
-.modal-actions .save-btn:hover {
-    background: #e03e1f;
-}
-
-.profile-card,
-.epis-panel {
-    background: #262c3d;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 18px;
-    padding: 1.8rem;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
-}
-
-.profile-card-header {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    margin-bottom: 1.8rem;
-    justify-content: space-between;
-}
-
-.profile-actions {
-    display: flex;
-    gap: 0.8rem;
-    align-items: center;
-}
-
-/* ========================================== */
-/* ESTILOS DOS BOTÕES DE AÇÃO */
-/* ========================================== */
-.action-buttons-group {
-    display: flex;
-    gap: 0.8rem;
-    align-items: center;
-}
-
-.edit-btn,
-.save-btn,
-.cancel-btn,
-.logout-btn {
-    border: none;
-    border-radius: 999px;
-    padding: 0.65rem 1rem;
-    font-weight: 600;
-    cursor: pointer;
+    font-weight: 500;
     transition: all 0.3s ease;
 }
 
-/* Botão Editar - cor laranja */
-.edit-btn {
-    background: #f05432;
-    color: white;
-}
+@media (max-width: 768px) {
+    .profile-card-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
 
-.edit-btn:hover {
-    background: #e74821;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(240, 84, 50, 0.3);
-}
+    .profile-info {
+        width: 100%;
+    }
 
-/* Botão Logout - cor vermelha para indicar saída da conta */
-.logout-btn {
-    background: #dc2626;
-    color: white;
-}
+    .profile-actions {
+        width: 100%;
+        justify-content: center;
+    }
 
-.logout-btn:hover {
-    background: #b91c1c;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
-}
-
-/* Botão Salvar - cor verde */
-.save-btn {
-    background: #1f6b3c;
-    color: white;
-}
-
-.save-btn:hover {
-    background: #15803d;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(31, 107, 60, 0.3);
-}
-
-/* Botão Cancelar - transparente com borda */
-.cancel-btn {
-    background: transparent;
-    color: #cbd5e1;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-.cancel-btn:hover {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.3);
-}
-
-.info-value {
-    display: flex;
-    justify-content: flex-end;
-    width: 50%;
-}
-
-.info-input {
-    width: 100%;
-    max-width: 220px;
-    padding: 0.55rem 0.85rem;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: #1f2532;
-    color: #edf2f7;
-}
-
-.info-input:focus {
-    outline: none;
-    border-color: #f05432;
-}
-
-.avatar {
-    width: 88px;
-    height: 88px;
-    border-radius: 50%;
-    background: #3d4555;
-    display: grid;
-    place-items: center;
-    font-size: 2.8rem;
-}
-
-.profile-info h1 {
-    margin: 0;
-    font-size: 2.2rem;
-    color: #ffffff;
-}
-
-.turma-label {
-    margin: 0.35rem 0 0;
-    color: #f05432;
-    font-weight: 600;
-}
-
-.profile-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1rem;
-}
-
-.info-box {
-    background: #1e2331;
-    border-radius: 14px;
-    padding: 1.2rem;
-}
-
-.info-box h2 {
-    margin: 0 0 1rem;
-    font-size: 1rem;
-    color: #f05432;
-}
-
-.info-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0.65rem 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.info-row:first-of-type {
-    border-top: none;
-}
-
-.info-row span {
-    color: #9ca3af;
-}
-
-.info-row strong {
-    color: #f8fafc;
-}
-
-.epis-header {
-    margin-bottom: 1rem;
-}
-
-.epis-header h2 {
-    margin: 0;
-    font-size: 1.6rem;
-}
-
-.epis-header p {
-    margin: 0.45rem 0 0;
-    color: #a0aec0;
-}
-
-.epis-list {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 1rem;
-}
-
-.epi-card {
-    background: #1e2331;
-    border-radius: 14px;
-    padding: 1rem 1.2rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.65rem;
-}
-
-.epi-card-title {
-    font-size: 1rem;
-    font-weight: 700;
-    color: #ffffff;
-}
-
-.epi-card-subtitle {
-    color: #94a3b8;
-}
-
-.epi-status {
-    margin-top: auto;
-    width: fit-content;
-    padding: 0.45rem 0.9rem;
-    border-radius: 999px;
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-
-.status-disponivel {
-    background: #1f6b3c;
-    color: #d1fae5;
-}
-
-.status-indisponivel {
-    background: #7b2d2d;
-    color: #ffe4e6;
-}
-
-.epi-empty,
-.empty-state {
-    color: #cbd5e1;
-    padding: 1.6rem;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.04);
-}
-
-.solicitacoes-section {
-    background: #262c3d;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 18px;
-    padding: 1.8rem;
-}
-
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    gap: 1rem;
-    align-items: center;
-    margin-bottom: 1.5rem;
-}
-
-.section-header h2 {
-    margin: 0;
-    font-size: 1.6rem;
-}
-
-.section-header p {
-    margin: 0.4rem 0 0;
-    color: #a0aec0;
-}
-
-.filter-box input {
-    width: 220px;
-    padding: 0.9rem 1rem;
-    border-radius: 999px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    background: #1f2532;
-    color: #edf2f7;
-}
-
-.filter-box input::placeholder {
-    color: #94a3b8;
-}
-
-.request-list {
-    display: grid;
-    gap: 0.9rem;
-}
-
-.request-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #1e2331;
-    border-radius: 14px;
-    padding: 1rem 1.2rem;
-}
-
-.request-left {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.request-name {
-    font-weight: 700;
-    color: #ffffff;
-}
-
-.request-type {
-    color: #94a3b8;
-    font-size: 0.92rem;
-}
-
-.request-status {
-    padding: 0.45rem 0.9rem;
-    border-radius: 999px;
-    font-size: 0.85rem;
-    font-weight: 600;
-}
-
-@media (max-width: 980px) {
-    .top-panel {
+    .profile-grid {
         grid-template-columns: 1fr;
     }
 
-    .epis-list {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 720px) {
-    .perfil-main {
-        padding: 1.4rem;
-    }
-
-    .section-header {
+    .info-row {
         flex-direction: column;
         align-items: flex-start;
+        text-align: left;
     }
 
-    .filter-box input {
-        width: 100%;
+    .info-value {
+        text-align: left;
+        margin-left: 0;
+        margin-top: 5px;
     }
 }
 </style>
