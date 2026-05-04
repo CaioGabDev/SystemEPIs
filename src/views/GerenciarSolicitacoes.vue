@@ -22,6 +22,14 @@
           <option value="entregue">Entregue</option>
           <option value="devolvido">Devolvido</option>
         </select>
+        <button 
+          v-if="filteredSolicitacoes.some(s => s.status === 'pendente')"
+          @click="aceitarTodos"
+          class="btn-aceitar-todos"
+          title="Aprovar todas as solicitações pendentes"
+        >
+          ✓ Aceitar Todas
+        </button>
       </div>
 
       <div v-if="loading" class="loading">
@@ -201,6 +209,7 @@ const loadSolicitacoes = async () => {
 
     if (error) throw error
     // armazena os dados das solicitações
+    console.log('Solicitações carregadas:', data)
     solicitacoes.value = data || []
   } catch (error) {
     console.error('Erro ao carregar solicitações:', error)
@@ -368,6 +377,42 @@ const marcarDevolvido = async (solicitacao) => {
   }
 }
 
+// aprova todas as solicitações pendentes de uma vez
+const aceitarTodos = async () => {
+  const pendentes = solicitacoes.value.filter(s => s.status === 'pendente')
+  
+  if (pendentes.length === 0) {
+    alert('Não há solicitações pendentes para aceitar')
+    return
+  }
+
+  const confirmar = confirm(`Deseja aceitar todas as ${pendentes.length} solicitações pendentes?`)
+  if (!confirmar) return
+
+  try {
+    // atualiza todas as solicitações pendentes
+    for (const solicitacao of pendentes) {
+      const { error } = await supabase
+        .from('solicitacoes')
+        .update({
+          status: 'aprovado',
+          data_aprovacao: new Date().toISOString().split('T')[0]
+        })
+        .eq('idsolicitacoes', solicitacao.idsolicitacoes)
+
+      if (error) {
+        console.error(`Erro ao aprovar solicitação ${solicitacao.idsolicitacoes}:`, error)
+      }
+    }
+
+    alert(`${pendentes.length} solicitação(ões) aprovada(s) com sucesso!`)
+    loadSolicitacoes()
+  } catch (error) {
+    console.error('Erro ao aceitar todos:', error)
+    alert('Erro ao aceitar todos: ' + error.message)
+  }
+}
+
 // executa quando a página carregar
 onMounted(() => {
   // carrega a lista de solicitações quando entra na página
@@ -423,6 +468,24 @@ onMounted(() => {
 .search-input, .filter-select {
   flex: 1;
   min-width: 200px;
+}
+
+.btn-aceitar-todos {
+  padding: 10px 20px;
+  background-color: #4ade80;
+  color: #1a1a1a;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.btn-aceitar-todos:hover {
+  background-color: #22c55e;
+  box-shadow: 0 4px 12px rgba(74, 222, 128, 0.4);
 }
 
 .loading {

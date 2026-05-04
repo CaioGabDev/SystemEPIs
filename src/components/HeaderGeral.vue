@@ -28,10 +28,13 @@
       <router-link to="/cadastrar" class="nav-dashboard">
         <h1>Cadastrar</h1>
       </router-link>
+      <router-link to="/alunos" class="nav-dashboard">
+        <h1>Alunos</h1>
+      </router-link>
     </nav>
 
     <div class="user-container">
-      <router-link to="/perfil" class="user-icon">
+      <router-link :to="perfilLink" class="user-icon">
         <span class="icon-placeholder">👤</span>
       </router-link>
     </div>
@@ -39,7 +42,16 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+import { useSupabase } from '../composables/useSupabase'
 import imageIcon from '../assets/logo empresa.png'
+
+const { getTipoUsuario } = useSupabase()
+
+const perfilLink = computed(() => {
+  const tipo = getTipoUsuario()
+  return tipo === 'funcionario' ? '/perfil-adm' : '/perfil'
+})
 </script>
 
 <style scoped>

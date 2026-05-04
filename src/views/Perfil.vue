@@ -221,12 +221,12 @@ const saveProfile = async () => {
     try {
         // Prepara os dados para atualizar
         const updateData = {
-            nome: profileData.value.nome,
-            sobrenome: profileData.value.sobrenome,
-            telefone: profileData.value.telefone,
-            cpf: profileData.value.cpf,
-            data_nascimento: profileData.value.data_nascimento,
-        };
+        nome: profileData.value.nome,
+        sobrenome: profileData.value.sobrenome,
+        telefone: profileData.value.telefone,
+        cpf: profileData.value.cpf,
+        data_nascimento: profileData.value.data_nascimento || null, 
+};
 
         // Atualiza na tabela de funcionários
         const { data: updated, error } = await supabase

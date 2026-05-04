@@ -94,6 +94,71 @@ export function useSupabase() {
     return data;
   };
 
+  const updateFuncionario = async (id, funcionario) => {
+    const { data, error } = await supabase
+      .from("funcionario")
+      .update(funcionario)
+      .eq("idfuncionario", id);
+    if (error) throw error;
+    return data;
+  };
+
+  const deleteFuncionario = async (id) => {
+    const { error } = await supabase
+      .from("funcionario")
+      .delete()
+      .eq("idfuncionario", id);
+    if (error) throw error;
+    return true;
+  };
+
+  // ALUNOS
+  const getAlunos = async () => {
+    const { data, error } = await supabase.from("aluno").select("*").order('nome', { ascending: true });
+    if (error) throw error;
+    return data;
+  };
+
+  const addAluno = async (aluno) => {
+    const { data, error } = await supabase
+      .from("aluno")
+      .insert([aluno]);
+    if (error) throw error;
+    return data;
+  };
+
+  const updateAluno = async (id, aluno) => {
+    const { data, error } = await supabase
+      .from("aluno")
+      .update(aluno)
+      .eq("idaluno", id);
+    if (error) throw error;
+    return data;
+  };
+
+  const deleteAluno = async (id) => {
+    const { error } = await supabase
+      .from("aluno")
+      .delete()
+      .eq("idaluno", id);
+    if (error) throw error;
+    return true;
+  };
+
+  const getAlunoComEPIs = async (alunoId) => {
+    const { data, error } = await supabase
+      .from("aluno_has_epis")
+      .select(`
+        id_entrega_aluno,
+        data_entrega,
+        epis:epis_id (idepis, nome, tipo, codigo_patrimonio)
+      `)
+      .eq("aluno_id", alunoId);
+    
+    if (error) throw error;
+    return data || [];
+  };
+
   // EPIs
   const getEPIs = async () => {
     const { data, error } = await supabase.from("epis").select("*");
@@ -226,6 +291,15 @@ export function useSupabase() {
     // Funcionários
     getFuncionarios,
     addFuncionario,
+    updateFuncionario,
+    deleteFuncionario,
+    
+    // Alunos
+    getAlunos,
+    addAluno,
+    updateAluno,
+    deleteAluno,
+    getAlunoComEPIs,
     
     // EPIs
     getEPIs,

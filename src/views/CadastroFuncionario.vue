@@ -4,215 +4,284 @@
     
     <div class="page-header">
       <div>
-        <h1>Cadastrar Funcionário</h1>
-        <p>Insira as informações básicas e credenciais de acesso para registrar um novo colaborador no sistema de segurança core.</p>
+        <h1>Funcionários</h1>
+        <p>Gerencie todos os colaboradores do sistema</p>
       </div>
       <div class="header-buttons">
-        <router-link to="/dashboard" class="btn-limpar">Limpar</router-link>
-        <button @click="handleCadastro" class="btn-cadastrar">Cadastrar funcionário →</button>
+        <button @click="openModal" class="btn-cadastrar">➕ Cadastrar Funcionário</button>
       </div>
     </div>
 
-    <div class="cadastro-content">
-      <div class="painel-preview">
-        <div class="preview-avatar">
-          <span class="avatar-icon">👤</span>
-          <span class="badge-novo">+</span>
-        </div>
+    <div class="funcionarios-content">
+      <div class="search-section">
+        <input 
+          v-model="searchQuery" 
+          type="text" 
+          placeholder="🔍 Buscar por nome, email ou CPF..."
+          class="search-input"
+        />
+      </div>
 
-        <div class="preview-header">
-          <h2>Novo Perfil</h2>
-          <p>AGUARDANDO DADOS...</p>
-        </div>
+      <div v-if="loadingFuncionarios" class="loading">
+        ⏳ Carregando funcionários...
+      </div>
 
-        <div class="preview-info">
-          <div class="info-item">
-            <label>Funcionário ativo</label>
-            <div class="toggle-switch">
-              <input type="checkbox" v-model="ativo" id="toggle-ativo">
-              <label for="toggle-ativo" class="toggle-label"></label>
+      <div v-else-if="filteredFuncionarios.length === 0" class="empty-state">
+        <p>Nenhum funcionário encontrado</p>
+      </div>
+
+      <div v-else class="funcionarios-grid">
+        <div v-for="func in filteredFuncionarios" :key="func.idfuncionario" class="funcionario-card">
+          <div class="card-header">
+            <div class="func-name">
+              <h3>{{ func.nome }} {{ func.sobrenome }}</h3>
+              <p class="func-role">{{ func.funcao || 'Sem função' }}</p>
             </div>
-          </div>
-
-          <div class="info-item">
-            <label class="label-title">STATUS DE CADASTRO</label>
-            <span class="status-badge" :class="{ completo: statusCadastro === 'Completo' }">
-              ● {{ statusCadastro }}
+            <span :class="['status-badge', func.status?.toLowerCase() === 'ativo' ? 'ativo' : 'inativo']">
+              {{ func.status || 'Desconhecido' }}
             </span>
           </div>
 
-          <div class="info-item">
-            <label class="label-title">NÍVEL DE ACESSO</label>
-            <span class="nivel-acesso">Padrão do Sistema</span>
+          <div class="card-body">
+            <div class="info-row">
+              <label>CPF:</label>
+              <span>{{ func.cpf || '---' }}</span>
+            </div>
+            <div class="info-row">
+              <label>Email:</label>
+              <span>{{ func.email || '---' }}</span>
+            </div>
+            <div class="info-row">
+              <label>Telefone:</label>
+              <span>{{ func.telefone || '---' }}</span>
+            </div>
+          </div>
+
+          <div class="card-footer">
+            <button @click="editarFuncionario(func)" class="btn-edit">Editar</button>
+            <button @click="deletarFuncionario(func.idfuncionario)" class="btn-delete">Deletar</button>
           </div>
         </div>
       </div>
+    </div>
 
-      <div class="painel-formulario">
-        <div class="form-section">
-          <div class="section-header">
-            <span class="section-icon">👤</span>
-            <h3>Dados pessoais</h3>
-          </div>
-          
-          <div class="form-grid">
-            <div class="form-group">
-              <label>NOME</label>
-              <input 
-                type="text" 
-                v-model="nome" 
-                placeholder="Ex. João"
-                class="input-field"
-              >
-            </div>
-
-            <div class="form-group">
-              <label>SOBRENOME</label>
-              <input 
-                type="text" 
-                v-model="sobrenome" 
-                placeholder="Ex. Silva"
-                class="input-field"
-              >
-            </div>
-
-            <div class="form-group">
-              <label>CPF</label>
-              <input 
-                type="text" 
-                v-model="cpf" 
-                placeholder="000.000.000-00"
-                @input="formatCPF"
-                class="input-field"
-              >
-            </div>
-
-            <div class="form-group">
-              <label>DATA DE NASCIMENTO</label>
-              <input 
-                type="date" 
-                v-model="dataNascimento"
-                class="input-field"
-              >
-            </div>
-
-            <div class="form-group">
-              <label>TELEFONE</label>
-              <input 
-                type="tel" 
-                v-model="telefone" 
-                placeholder="(00) 00000-0000"
-                @input="formatTelefone"
-                class="input-field"
-              >
-            </div>
-
-            <div class="form-group">
-              <label>FUNÇÃO</label>
-              <select v-model="funcao" class="input-field select-field">
-                <option value="">Selecione a função</option>
-                <option value="Gerente">Gerente</option>
-                <option value="Supervisor">Supervisor</option>
-                <option value="Operador">Operador</option>
-                <option value="Almoxarife">Almoxarife</option>
-                <option value="Outro">Outro</option>
-              </select>
-            </div>
-          </div>
+    <!-- Modal de Cadastro/Edição -->
+    <div v-if="showModal" class="modal-overlay" @click="closeModal">
+      <div class="modal-content" @click.stop>
+        <div class="modal-header">
+          <h2>{{ isEditando ? 'Editar' : 'Cadastrar' }} Funcionário</h2>
+          <button class="btn-close" @click="closeModal">&times;</button>
         </div>
 
-        <div class="form-section">
-          <div class="section-header">
-            <span class="section-icon">🔐</span>
-            <h3>Dados de acesso</h3>
-          </div>
-
-          <div class="form-grid">
-            <div class="form-group full-width">
-              <label>E-MAIL</label>
-              <input 
-                type="email" 
-                v-model="email" 
-                placeholder="nome.sobrenome@empresa.com.br"
-                class="input-field"
-              >
+        <form class="modal-form" @submit.prevent="handleCadastro">
+          <div class="form-section">
+            <div class="section-header">
+              <span class="section-icon">👤</span>
+              <h3>Dados pessoais</h3>
             </div>
-
-            <div class="form-group">
-              <label>SENHA</label>
-              <div class="input-with-icon">
+            
+            <div class="form-grid">
+              <div class="form-group">
+                <label>NOME *</label>
                 <input 
-                  :type="showPassword ? 'text' : 'password'" 
-                  v-model="password"
-                  placeholder="••••••••"
+                  type="text" 
+                  v-model="nome" 
+                  placeholder="Ex. João"
                   class="input-field"
+                  required
                 >
-                <span class="eye-icon" @click="showPassword = !showPassword">👁️</span>
               </div>
-            </div>
 
-            <div class="form-group">
-              <label>CONFIRMAR SENHA</label>
-              <div class="input-with-icon">
+              <div class="form-group">
+                <label>SOBRENOME *</label>
                 <input 
-                  :type="showConfirmPassword ? 'text' : 'password'" 
-                  v-model="confirmPassword"
-                  placeholder="••••••••"
+                  type="text" 
+                  v-model="sobrenome" 
+                  placeholder="Ex. Silva"
+                  class="input-field"
+                  required
+                >
+              </div>
+
+              <div class="form-group">
+                <label>CPF *</label>
+                <input 
+                  type="text" 
+                  v-model="cpf" 
+                  placeholder="000.000.000-00"
+                  @input="formatCPF"
+                  class="input-field"
+                  required
+                >
+              </div>
+
+              <div class="form-group">
+                <label>FUNÇÃO *</label>
+                <select v-model="funcao" class="input-field select-field" required>
+                  <option value="">Selecione a função</option>
+                  <option value="Gerente">Gerente</option>
+                  <option value="Supervisor">Supervisor</option>
+                  <option value="Operador">Operador</option>
+                  <option value="Almoxarife">Almoxarife</option>
+                  <option value="Outro">Outro</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>TELEFONE</label>
+                <input 
+                  type="tel" 
+                  v-model="telefone" 
+                  placeholder="(00) 00000-0000"
+                  @input="formatTelefone"
                   class="input-field"
                 >
-                <span class="eye-icon" @click="showConfirmPassword = !showConfirmPassword">👁️</span>
+              </div>
+
+              <div class="form-group">
+                <label>EMAIL *</label>
+                <input 
+                  type="email" 
+                  v-model="email" 
+                  placeholder="nome@empresa.com.br"
+                  class="input-field"
+                  required
+                >
               </div>
             </div>
           </div>
-        </div>
+
+          <div v-if="!isEditando" class="form-section">
+            <div class="section-header">
+              <span class="section-icon">🔐</span>
+              <h3>Dados de acesso</h3>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label>SENHA *</label>
+                <div class="input-with-icon">
+                  <input 
+                    :type="showPassword ? 'text' : 'password'" 
+                    v-model="password"
+                    placeholder="••••••••"
+                    class="input-field"
+                    required
+                  >
+                  <span class="eye-icon" @click="showPassword = !showPassword">👁️</span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label>CONFIRMAR SENHA *</label>
+                <div class="input-with-icon">
+                  <input 
+                    :type="showConfirmPassword ? 'text' : 'password'" 
+                    v-model="confirmPassword"
+                    placeholder="••••••••"
+                    class="input-field"
+                    required
+                  >
+                  <span class="eye-icon" @click="showConfirmPassword = !showConfirmPassword">👁️</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="submit" class="btn-submit">{{ isEditando ? 'Atualizar' : 'Cadastrar' }} Funcionário</button>
+            <button type="button" class="btn-cancel" @click="closeModal">Cancelar</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-// importa a função de signup do supabase
+import { ref, computed, onMounted } from 'vue'
 import { useSupabase } from '../composables/useSupabase'
 import HeaderGeral from '../components/HeaderGeral.vue'
 
-// pega a função de cadastro do supabase
-const { signUp } = useSupabase()
+const { signUp, supabase } = useSupabase()
 
-// armazena os dados pessoais do funcionário
+// State
+const showModal = ref(false)
+const isEditando = ref(false)
+const loadingFuncionarios = ref(true)
+const funcionarios = ref([])
+const searchQuery = ref('')
+
+// Form data
 const nome = ref('')
 const sobrenome = ref('')
 const cpf = ref('')
-const dataNascimento = ref('')
-const telefone = ref('')
-const funcao = ref('')
-
-// armazena os dados de acesso
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
-// controla se a senha é visível ou não
+const funcao = ref('')
+const telefone = ref('')
 const showPassword = ref(false)
 const showConfirmPassword = ref(false)
+const editandoId = ref(null)
 
-// controla se o funcionário está ativo
-const ativo = ref(true)
-// calcula o status do cadastro dinamicamente
-const statusCadastro = computed(() => {
-  // se faltarem campos obrigatórios, mostra "em progresso"
-  if (!nome.value || !cpf.value || !email.value || !password.value) {
-    return 'Em progresso'
-  }
-  return 'Completo'
+// Filtered list
+const filteredFuncionarios = computed(() => {
+  const query = searchQuery.value.toLowerCase()
+  return funcionarios.value.filter(func => 
+    func.nome.toLowerCase().includes(query) ||
+    func.sobrenome.toLowerCase().includes(query) ||
+    func.email.toLowerCase().includes(query) ||
+    func.cpf.includes(query)
+  )
 })
 
-// formata o cpf automaticamente conforme o usuário digita
+const loadFuncionarios = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('funcionario')
+      .select('*')
+      .order('nome', { ascending: true })
+
+    if (error) throw error
+    funcionarios.value = data || []
+  } catch (error) {
+    console.error('Erro ao carregar funcionários:', error)
+    alert('Erro ao carregar funcionários')
+  } finally {
+    loadingFuncionarios.value = false
+  }
+}
+
+const openModal = () => {
+  isEditando.value = false
+  resetForm()
+  showModal.value = true
+}
+
+const closeModal = () => {
+  showModal.value = false
+  resetForm()
+}
+
+const resetForm = () => {
+  nome.value = ''
+  sobrenome.value = ''
+  cpf.value = ''
+  email.value = ''
+  password.value = ''
+  confirmPassword.value = ''
+  funcao.value = ''
+  telefone.value = ''
+  showPassword.value = false
+  showConfirmPassword.value = false
+  isEditando.value = false
+  editandoId.value = null
+}
+
 const formatCPF = () => {
-  // remove qualquer caractere que não seja número
   let value = cpf.value.replace(/\D/g, '')
-  // limita a 11 dígitos
   if (value.length > 11) value = value.slice(0, 11)
-  // formata com pontos e traço (xxx.xxx.xxx-xx)
   if (value.length > 8) {
     value = value.slice(0, 3) + '.' + value.slice(3, 6) + '.' + value.slice(6, 9) + '-' + value.slice(9)
   } else if (value.length > 6) {
@@ -223,13 +292,9 @@ const formatCPF = () => {
   cpf.value = value
 }
 
-// formata o telefone automaticamente conforme o usuário digita
 const formatTelefone = () => {
-  // remove qualquer caractere que não seja número
   let value = telefone.value.replace(/\D/g, '')
-  // limita a 11 dígitos
   if (value.length > 11) value = value.slice(0, 11)
-  // formata com parênteses e traço ((xx) xxxxx-xxxx)
   if (value.length > 7) {
     value = '(' + value.slice(0, 2) + ') ' + value.slice(2, 7) + '-' + value.slice(7)
   } else if (value.length > 2) {
@@ -238,67 +303,105 @@ const formatTelefone = () => {
   telefone.value = value
 }
 
-// valida todos os campos do formulário
 const validarForm = () => {
-  // verifica se o nome foi preenchido
   if (!nome.value.trim()) {
     alert('Nome é obrigatório')
     return false
   }
-  // verifica se o cpf foi preenchido e tem o formato correto
   if (!cpf.value.trim() || cpf.value.length < 14) {
     alert('CPF inválido (XXX.XXX.XXX-XX)')
     return false
   }
-  // verifica se o email foi preenchido e tem @
   if (!email.value.trim() || !email.value.includes('@')) {
     alert('E-mail inválido')
     return false
   }
-  // verifica se a senha tem pelo menos 6 caracteres
-  if (password.value.length < 6) {
-    alert('Senha deve ter no mínimo 6 caracteres')
-    return false
-  }
-  // verifica se as duas senhas são iguais
-  if (password.value !== confirmPassword.value) {
-    alert('As senhas não coincidem')
-    return false
+  if (!isEditando.value) {
+    if (password.value.length < 6) {
+      alert('Senha deve ter no mínimo 6 caracteres')
+      return false
+    }
+    if (password.value !== confirmPassword.value) {
+      alert('As senhas não coincidem')
+      return false
+    }
   }
   return true
 }
 
-// função que cadastra um novo funcionário
 const handleCadastro = async () => {
-  // valida todos os campos antes de fazer o cadastro
   if (!validarForm()) return
 
   try {
-    const userData = {
-      type: 'funcionario',
-      nome: nome.value.trim(),
-      sobrenome: sobrenome.value.trim(),
-      cpf: cpf.value.trim(),
-      funcao: funcao.value || 'Padrão'
+    if (isEditando.value) {
+      const { error } = await supabase
+        .from('funcionario')
+        .update({
+          nome: nome.value.trim(),
+          sobrenome: sobrenome.value.trim(),
+          cpf: cpf.value.trim(),
+          email: email.value.trim(),
+          funcao: funcao.value || 'Padrão',
+          telefone: telefone.value.trim()
+        })
+        .eq('idfuncionario', editandoId.value)
+
+      if (error) throw error
+      alert('Funcionário atualizado com sucesso!')
+    } else {
+      const userData = {
+        tipo: 'funcionario',
+        nome: nome.value.trim(),
+        sobrenome: sobrenome.value.trim(),
+        cpf: cpf.value.trim(),
+        funcao: funcao.value || 'Padrão'
+      }
+
+      await signUp(email.value.trim(), password.value, userData)
+      alert('Funcionário cadastrado com sucesso!')
     }
 
-    await signUp(email.value.trim(), password.value, userData)
-    alert('Funcionário cadastrado com sucesso!')
-    
-    nome.value = ''
-    sobrenome.value = ''
-    cpf.value = ''
-    dataNascimento.value = ''
-    telefone.value = ''
-    funcao.value = ''
-    email.value = ''
-    password.value = ''
-    confirmPassword.value = ''
+    closeModal()
+    await loadFuncionarios()
   } catch (error) {
-    console.error('Erro no cadastro:', error)
-    alert('Erro ao cadastrar: ' + error.message)
+    console.error('Erro:', error)
+    alert('Erro: ' + error.message)
   }
 }
+
+const editarFuncionario = (func) => {
+  isEditando.value = true
+  editandoId.value = func.idfuncionario
+  nome.value = func.nome
+  sobrenome.value = func.sobrenome
+  cpf.value = func.cpf
+  email.value = func.email
+  funcao.value = func.funcao
+  telefone.value = func.telefone || ''
+  showModal.value = true
+}
+
+const deletarFuncionario = async (id) => {
+  if (!confirm('Deseja deletar este funcionário?')) return
+
+  try {
+    const { error } = await supabase
+      .from('funcionario')
+      .delete()
+      .eq('idfuncionario', id)
+
+    if (error) throw error
+    alert('Funcionário deletado com sucesso!')
+    await loadFuncionarios()
+  } catch (error) {
+    console.error('Erro ao deletar:', error)
+    alert('Erro: ' + error.message)
+  }
+}
+
+onMounted(() => {
+  loadFuncionarios()
+})
 </script>
 
 <style scoped>
@@ -306,260 +409,271 @@ const handleCadastro = async () => {
   width: 100%;
   min-height: 100vh;
   background-color: #293140;
-  color: #ffffff;
 }
 
 .page-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  padding: 2rem;
-  max-width: 1400px;
-  margin: 0 auto;
-  gap: 2rem;
+  align-items: center;
+  padding: 2rem 3rem;
+  border-bottom: 1px solid #556274;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .page-header h1 {
-  margin: 0;
   font-size: 2rem;
   color: #ffffff;
+  margin: 0;
+  font-weight: 700;
 }
 
 .page-header p {
-  margin: 0.5rem 0 0 0;
-  font-size: 0.95rem;
   color: #b0b5be;
-  max-width: 500px;
-  line-height: 1.6;
+  margin: 0.5rem 0 0 0;
 }
 
 .header-buttons {
   display: flex;
-  gap: 1rem;
-}
-
-.btn-limpar {
-  padding: 0.75rem 1.5rem;
-  background-color: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-  border-radius: 6px;
-  cursor: pointer;
-  text-decoration: none;
-  font-weight: 600;
-  transition: all 0.3s ease;
-  display: flex;
-  align-items: center;
-}
-
-.btn-limpar:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.4);
+  gap: 0.75rem;
 }
 
 .btn-cadastrar {
+  background-color: #f05432;
+  color: white;
+  border: none;
   padding: 0.75rem 1.5rem;
-  background-color: #FF3A18;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.btn-cadastrar:hover {
+  background-color: #e54320;
+  box-shadow: 0 4px 12px rgba(240, 84, 50, 0.4);
+}
+
+.funcionarios-content {
+  padding: 2rem 3rem;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+.search-section {
+  margin-bottom: 2rem;
+}
+
+.search-input {
+  width: 100%;
+  background-color: #3d4555;
+  border: 1px solid #556274;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: #e0e7ff;
+  font-size: 0.95rem;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.search-input::placeholder {
+  color: #b0b5be;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #f05432;
+  background-color: #45505f;
+}
+
+.loading, .empty-state {
+  text-align: center;
+  padding: 3rem;
+  color: #b0b5be;
+  font-size: 1.1rem;
+}
+
+.funcionarios-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 1.5rem;
+}
+
+.funcionario-card {
+  background-color: #3d4555;
+  border-radius: 12px;
+  border: 1px solid #556274;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.funcionario-card:hover {
+  border-color: #f05432;
+  box-shadow: 0 8px 16px rgba(240, 84, 50, 0.2);
+}
+
+.card-header {
+  background-color: #2d3748;
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid #556274;
+}
+
+.func-name h3 {
   color: #ffffff;
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.func-role {
+  color: #b0b5be;
+  font-size: 0.85rem;
+  margin: 0.25rem 0 0 0;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 0.35rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.status-badge.ativo {
+  background-color: #4ade80;
+  color: #1a1a1a;
+}
+
+.status-badge.inativo {
+  background-color: #ef4444;
+  color: white;
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  color: #e0e7ff;
+  font-size: 0.9rem;
+}
+
+.info-row label {
+  font-weight: 600;
+  color: #b0b5be;
+}
+
+.card-footer {
+  padding: 1rem 1.5rem;
+  background-color: #2d3748;
+  border-top: 1px solid #556274;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.btn-edit, .btn-delete {
+  flex: 1;
+  padding: 0.5rem 1rem;
   border: none;
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
   transition: all 0.3s ease;
-  white-space: nowrap;
-}
-
-.btn-cadastrar:hover {
-  background-color: #f05432;
-  transform: translateY(-2px);
-  box-shadow: 0 8px 16px rgba(240, 84, 50, 0.3);
-}
-
-.btn-cadastrar:active {
-  transform: translateY(0);
-}
-
-.cadastro-content {
-  display: flex;
-  gap: 2rem;
-  padding: 0 2rem 2rem 2rem;
-  max-width: 1400px;
-  margin: 0 auto;
-}
-
-.painel-preview {
-  flex: 0 0 350px;
-  background-color: #2a3139;
-  border-radius: 12px;
-  padding: 2rem;
-  height: fit-content;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.preview-avatar {
-  position: relative;
-  width: 100px;
-  height: 100px;
-  margin: 0 auto 1.5rem;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.avatar-icon {
-  font-size: 3rem;
-  opacity: 0.5;
-}
-
-.badge-novo {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 30px;
-  height: 30px;
-  background-color: #FF3A18;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  font-weight: bold;
-  border: 3px solid #2a3139;
-}
-
-.preview-header {
-  text-align: center;
-  margin-bottom: 2rem;
-}
-
-.preview-header h2 {
-  margin: 0;
-  font-size: 1.3rem;
-  color: #ffffff;
-}
-
-.preview-header p {
-  margin: 0.25rem 0 0 0;
-  font-size: 0.75rem;
-  color: #b0b5be;
-}
-
-.preview-info {
-  margin: 2rem 0;
-  padding: 2rem 0;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.info-item {
-  margin-bottom: 1.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.info-item label {
   font-size: 0.9rem;
-  color: #b0b5be;
 }
 
-.label-title {
-  font-size: 0.65rem;
-  font-weight: bold;
-  text-transform: uppercase;
-  color: #7a7f88;
-  display: block;
-  margin-bottom: 0.5rem;
+.btn-edit {
+  background-color: #556274;
+  color: #e0e7ff;
 }
 
-.status-badge {
-  font-size: 0.85rem;
-  color: #7a7f88;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
+.btn-edit:hover {
+  background-color: #6b7280;
 }
 
-.status-badge.completo {
-  color: #4caf50;
+.btn-delete {
+  background-color: #ef4444;
+  color: white;
 }
 
-.nivel-acesso {
-  font-size: 0.85rem;
-  color: #b0b5be;
+.btn-delete:hover {
+  background-color: #dc2626;
 }
 
-.toggle-switch {
-  position: relative;
-  display: inline-block;
-  width: 50px;
-  height: 26px;
-}
-
-.toggle-switch input {
-  display: none;
-}
-
-.toggle-label {
-  position: absolute;
-  cursor: pointer;
+/* Modal */
+.modal-overlay {
+  position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #5c626d;
-  border-radius: 26px;
-  transition: 0.3s;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
 }
 
-.toggle-switch input:checked + .toggle-label {
-  background-color: #FF3A18;
-}
-
-.toggle-label::after {
-  content: '';
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  left: 3px;
-  bottom: 3px;
-  background-color: white;
-  border-radius: 50%;
-  transition: 0.3s;
-}
-
-.toggle-switch input:checked + .toggle-label::after {
-  left: 27px;
-}
-
-.painel-formulario {
-  flex: 1;
-  background-color: #2a3139;
+.modal-content {
+  background-color: #3d4555;
   border-radius: 12px;
   padding: 2rem;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  max-height: calc(100vh - 300px);
+  max-width: 600px;
+  width: 90%;
+  max-height: 90vh;
   overflow-y: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-header h2 {
+  color: #ffffff;
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.btn-close {
+  background: none;
+  border: none;
+  color: #b0b5be;
+  font-size: 2rem;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.btn-close:hover {
+  color: #f05432;
+}
+
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
 }
 
 .form-section {
-  margin-bottom: 2.5rem;
-  padding-bottom: 2.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.form-section:last-child {
-  border-bottom: none;
-  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .section-header {
   display: flex;
-  align-items: center;
   gap: 0.75rem;
-  margin-bottom: 1.5rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
 }
 
 .section-icon {
@@ -567,56 +681,45 @@ const handleCadastro = async () => {
 }
 
 .section-header h3 {
+  color: #e0e7ff;
   margin: 0;
-  font-size: 1.1rem;
-  color: #ffffff;
-  font-weight: 600;
+  font-size: 1rem;
 }
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.5rem;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-}
-
-.form-group.full-width {
-  grid-column: 1 / -1;
+  gap: 0.5rem;
 }
 
 .form-group label {
-  font-size: 0.7rem;
-  font-weight: bold;
-  text-transform: uppercase;
-  color: #7a7f88;
-  margin-bottom: 0.5rem;
-  letter-spacing: 0.5px;
+  color: #e0e7ff;
+  font-weight: 500;
+  font-size: 0.9rem;
 }
 
 .input-field {
-  background-color: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background-color: #293140;
+  border: 1px solid #556274;
   border-radius: 6px;
   padding: 0.75rem;
-  color: #ffffff;
-  font-size: 0.9rem;
-  font-family: inherit;
+  color: #e0e7ff;
+  font-size: 0.95rem;
   transition: all 0.3s ease;
-}
-
-.input-field::placeholder {
-  color: rgba(255, 255, 255, 0.3);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .input-field:focus {
   outline: none;
-  background-color: rgba(0, 0, 0, 0.5);
-  border-color: #FF3A18;
-  box-shadow: 0 0 0 3px rgba(240, 84, 50, 0.1);
+  border-color: #f05432;
+  background-color: #3d4555;
 }
 
 .select-field {
@@ -630,96 +733,76 @@ const handleCadastro = async () => {
 
 .input-with-icon {
   position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.input-with-icon .input-field {
-  padding-right: 2.5rem;
-  width: 100%;
 }
 
 .eye-icon {
   position: absolute;
-  right: 0.75rem;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
   cursor: pointer;
-  font-size: 1.1rem;
-  opacity: 0.6;
-  transition: opacity 0.2s;
-  pointer-events: all;
+  user-select: none;
 }
 
-.eye-icon:hover {
-  opacity: 1;
+.modal-footer {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
 }
 
-.painel-formulario::-webkit-scrollbar {
-  width: 6px;
+.btn-submit {
+  flex: 1;
+  background-color: #f05432;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
 }
 
-.painel-formulario::-webkit-scrollbar-track {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
+.btn-submit:hover {
+  background-color: #e54320;
 }
 
-.painel-formulario::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 10px;
+.btn-cancel {
+  flex: 1;
+  background-color: #556274;
+  color: #e0e7ff;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
 }
 
-.painel-formulario::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.3);
+.btn-cancel:hover {
+  background-color: #6b7280;
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
   .page-header {
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
+    padding: 1.5rem;
   }
 
-  .header-buttons {
-    justify-content: flex-end;
+  .funcionarios-content {
+    padding: 1.5rem;
   }
 
-  .cadastro-content {
-    flex-direction: column;
-  }
-
-  .painel-preview {
-    flex: none;
-    width: 100%;
-  }
-
-  .painel-formulario {
-    flex: none;
-    width: 100%;
-    max-height: none;
+  .funcionarios-grid {
+    grid-template-columns: 1fr;
   }
 
   .form-grid {
     grid-template-columns: 1fr;
   }
 
-  .form-group.full-width {
-    grid-column: 1;
-  }
-}
-
-@media (max-width: 768px) {
-  .page-header {
-    padding: 1rem;
-  }
-
-  .page-header h1 {
-    font-size: 1.5rem;
-  }
-
-  .page-header p {
-    font-size: 0.85rem;
-  }
-
-  .cadastro-content {
-    padding: 0 1rem 1rem 1rem;
+  .modal-content {
+    padding: 1.5rem;
   }
 }
 </style>

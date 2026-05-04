@@ -6,10 +6,12 @@ import CadastroFuncionario from '../views/CadastroFuncionario.vue'
 import Dashboard from '../views/Dashboard.vue'
 import DashboardAluno from '../views/DashboardAluno.vue'
 import EPIs from '../views/EPIs.vue'
+import Perfil from '../views/Perfil.vue'
 import PerfilAluno from '../views/PerfilAluno.vue'
 import CatalogoEPIs from '../views/CatalogoEPIs.vue'
 import MinhasSolicitacoes from '../views/MinhasSolicitacoes.vue'
 import GerenciarSolicitacoes from '../views/GerenciarSolicitacoes.vue'
+import Alunos from '../views/Alunos.vue'
 import { useSupabase } from '../composables/useSupabase'
 
 
@@ -49,6 +51,16 @@ const routes = [
   { 
     path: '/gerenciar-solicitacoes', 
     component: GerenciarSolicitacoes,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  { 
+    path: '/perfil-adm', 
+    component: Perfil,
+    meta: { requiresAuth: true, requiresAdmin: true }
+  },
+  { 
+    path: '/alunos', 
+    component: Alunos,
     meta: { requiresAuth: true, requiresAdmin: true }
   },
   // ROTAS PROTEGIDAS - APENAS ALUNO

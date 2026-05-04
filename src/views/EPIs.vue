@@ -194,7 +194,7 @@ import { useSupabase } from '../composables/useSupabase'
 import { jsPDF } from 'jspdf'
 
 // pega as funções para trabalhar com epis
-const { getEPIs, addEPI, deleteEPI } = useSupabase()
+const { getEPIs, addEPI, deleteEPI, supabase } = useSupabase()
 
 // armazena todos os epis
 const epis = ref([])
@@ -264,13 +264,31 @@ const filteredEPIs = computed(() => {
 })
 
 // calcula as estatísticas dos epis (total, estoque, em uso, vencidos)
-const calcularStats = () => {
+const calcularStats = async () => {
   // conta o total de epis
   const total = epis.value.length
   // conta quantos epis tem quantidade maior que 0
   const emEstoque = epis.value.filter(e => e.quantidade && e.quantidade > 0).length
-  // conta quantos epis estão sendo usados
-  const emUso = epis.value.reduce((acc, e) => acc + (e.quantidade > 0 ? 1 : 0), 0)
+  
+  // busca EPIs realmente em uso nas tabelas de entregas
+  const { data: alunosComEpis } = await supabase
+    .from('aluno_has_epis')
+    .select('epis_id')
+  
+  const { data: funcionariosComEpis } = await supabase
+    .from('funcionario_has_epis')
+    .select('epis_id')
+    .is('data_devolucao', null) // apenas os não devolvidos
+  
+  // cria set de ids únicos em uso
+  const idsEmUso = new Set()
+  if (alunosComEpis) {
+    alunosComEpis.forEach(item => idsEmUso.add(item.epis_id))
+  }
+  if (funcionariosComEpis) {
+    funcionariosComEpis.forEach(item => idsEmUso.add(item.epis_id))
+  }
+  const emUso = idsEmUso.size
   
   // pega a data de hoje
   const hoje = new Date().toISOString().split('T')[0]
@@ -336,16 +354,41 @@ const salvarEPI = async () => {
       return
     }
 
-    await addEPI({
-      nome: novoEPI.value.nome,
-      tipo: novoEPI.value.tipo,
-      quantidade: novoEPI.value.quantidade,
-      codigo_patrimonio: novoEPI.value.codigo_patrimonio,
-      data_validade: novoEPI.value.data_validade,
-      disponivel: novoEPI.value.disponivel
-    })
+    const quantidade = novoEPI.value.quantidade || 1
+    
+    // Cria múltiplos EPIs, um para cada unidade
+    const episCriar = []
+    for (let i = 0; i < quantidade; i++) {
+      episCriar.push({
+        nome: novoEPI.value.nome,
+        tipo: novoEPI.value.tipo,
+        quantidade: 1, // Sempre 1 por registro
+        codigo_patrimonio: novoEPI.value.codigo_patrimonio 
+          ? `${novoEPI.value.codigo_patrimonio}-${i + 1}`
+          : null,
+        data_validade: novoEPI.value.data_validade,
+        disponivel: novoEPI.value.disponivel
+      })
+    }
 
-    alert('EPI cadastrado com sucesso!')
+    // Insere todos os EPIs
+    const { error } = await supabase
+      .from('epis')
+      .insert(episCriar)
+
+    if (error) {
+      console.error('Erro ao salvar EPI:', error)
+      
+      // Mensagem mais específica para erro RLS
+      if (error.message.includes('row-level security')) {
+        alert('Erro de permissão ao salvar EPI. Verifique se sua conta tem permissão para adicionar EPIs. Contate um administrador.')
+      } else {
+        alert('Erro ao salvar EPI: ' + error.message)
+      }
+      return
+    }
+
+    alert(`${quantidade} EPI(s) cadastrado(s) com sucesso!`)
     showCadastroModal.value = false
     await carregarEPIs()
   } catch (error) {
@@ -392,7 +435,23 @@ const limparFiltrosEFechar = () => {
 const deletarEPI = async (id) => {
   if (confirm('Deseja deletar este EPI? Esta ação não pode ser desfeita.')) {
     try {
-      await deleteEPI(id)
+      const { data, error } = await supabase
+        .from('epis')
+        .delete()
+        .eq('idepis', id)
+
+      if (error) {
+        console.error('Erro ao deletar EPI:', error)
+        
+        // Mensagem mais específica para erro RLS
+        if (error.message.includes('row-level security')) {
+          alert('Erro de permissão ao deletar EPI. Verifique se sua conta tem permissão.')
+        } else {
+          alert('Erro ao deletar EPI: ' + error.message)
+        }
+        return
+      }
+
       alert('EPI deletado com sucesso!')
       await carregarEPIs()
     } catch (error) {
@@ -761,6 +820,7 @@ onMounted(() => {
   min-width: 150px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
   margin-top: 0.5rem;
+  pointer-events: auto;
 }
 
 .menu-item {
