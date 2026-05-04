@@ -78,12 +78,12 @@ const filteredEpis = computed(() => {
   return epis.value.filter(epi => {
     // verifica se o nome ou descrição contém o texto de busca
     const matchesSearch = epi.nome.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-    (epi.descricao && epi.descricao.toLowerCase().includes(searchQuery.value.toLowerCase()))
+      (epi.descricao && epi.descricao.toLowerCase().includes(searchQuery.value.toLowerCase()))
     // verifica se o tipo bate com o filtro selecionado
     const matchesTipo = !tipoFilter.value || epi.tipo === tipoFilter.value
     // verifica se a disponibilidade bate com o filtro (compara boolean com string)
     const matchesDisponibilidade = !disponibilidadeFilter.value ||
-    epi.disponivel === (disponibilidadeFilter.value === 'true')
+      epi.disponivel === (disponibilidadeFilter.value === 'true')
     return matchesSearch && matchesTipo && matchesDisponibilidade
   })
 })
@@ -168,7 +168,8 @@ onMounted(() => {
 
 .catalogo-main {
   display: flex;
-  min-height: calc(100vh - 80px); /* Ajustar conforme header */
+  min-height: calc(100vh - 80px);
+  /* Ajustar conforme header */
 }
 
 .content {
@@ -198,7 +199,8 @@ onMounted(() => {
   flex-wrap: wrap;
 }
 
-.search-input, .filter-select {
+.search-input,
+.filter-select {
   padding: 10px;
   border: none;
   border-radius: 8px;
@@ -235,7 +237,8 @@ onMounted(() => {
   margin-bottom: 5px;
 }
 
-.epi-type, .epi-description {
+.epi-type,
+.epi-description {
   color: rgba(255, 255, 255, 0.8);
   font-size: 0.9rem;
 }

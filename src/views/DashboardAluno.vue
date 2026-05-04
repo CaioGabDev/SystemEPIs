@@ -153,6 +153,7 @@ const loadDashboardData = async () => {
       .eq('aluno_id', alunoId)
 
     if (episError) throw episError
+    console.log('EPIs atribuídos ao aluno:', episData)
     episAtribuidos.value = episData || []
 
     // carrega todas as solicitações do aluno

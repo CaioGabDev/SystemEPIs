@@ -2,25 +2,17 @@
   <div class="Login">
     <div class="logo-container">
       <router-link to="/" class="text-link">
-      <div class="logo-icon">
-        <img 
-          :src="imageIcon" 
-          alt="Ilustração Icone da equipe" 
-          class="icon-placeholder"
-        />
-      </div>
+        <div class="logo-icon">
+          <img :src="imageIcon" alt="Ilustração Icone da equipe" class="icon-placeholder" />
+        </div>
       </router-link>
       <router-link to="/" class="text-link">
-      <h2 class="logo-text">DashEPI</h2>
+        <h2 class="logo-text">DashEPI</h2>
       </router-link>
     </div>
     <div class="container">
       <div class="image-container">
-        <img 
-          :src="imageLogin" 
-          alt="Ilustração Icone da equipe" 
-          class="icon-placeholder"
-        />
+        <img :src="imageLogin" alt="Ilustração Icone da equipe" class="icon-placeholder" />
       </div>
       <aside>
         <h1 class="title">Gestão de EPI</h1>
@@ -28,7 +20,8 @@
         <form class="inputs" @submit.prevent="handleCadastro">
           <input placeholder="Nome" v-model="nome" required class="input-field">
           <input placeholder="Sobrenome" v-model="sobrenome" class="input-field">
-          <input placeholder="CPF (xxx.xxx.xxx-xx)" v-model="cpf" required class="input-field">
+          <input placeholder="CPF (xxx.xxx.xxx-xx)" v-model="cpf" @input="formatCPF" maxlength="14" required
+            class="input-field">
           <input placeholder="E-mail" v-model="email" type="email" required class="input-field">
           <input placeholder="Senha" type="password" v-model="password" required class="input-field">
           <input placeholder="Repita sua senha" type="password" v-model="confirmPassword" required class="input-field">
@@ -89,7 +82,7 @@ const handleCadastro = async () => {
     alert('Senhas não coincidem')
     return
   }
-  
+
   try {
     // prepara os dados do novo usuário
     const userData = {
@@ -100,7 +93,7 @@ const handleCadastro = async () => {
       email: email.value.trim(),
       funcao: ''
     }
-    
+
     console.log('Enviando dados:', userData)
     // chama a função do supabase para criar a conta
     await signUp(email.value.trim(), password.value, userData)
@@ -110,6 +103,25 @@ const handleCadastro = async () => {
   } catch (error) {
     console.error('Erro no cadastro:', error)
     alert('Erro no cadastro: ' + error.message)
+  }
+}
+
+// função que formata o CPF enquanto digita
+const formatCPF = (event) => {
+  let value = event.target.value.replace(/\D/g, '') // remove tudo que não é número
+
+  if (value.length > 11) {
+    value = value.slice(0, 11) // limita a 11 dígitos
+  }
+
+  if (value.length <= 3) {
+    cpf.value = value
+  } else if (value.length <= 6) {
+    cpf.value = value.slice(0, 3) + '.' + value.slice(3)
+  } else if (value.length <= 9) {
+    cpf.value = value.slice(0, 3) + '.' + value.slice(3, 6) + '.' + value.slice(6)
+  } else {
+    cpf.value = value.slice(0, 3) + '.' + value.slice(3, 6) + '.' + value.slice(6, 9) + '-' + value.slice(9)
   }
 }
 </script>
@@ -142,7 +154,7 @@ const handleCadastro = async () => {
 
 .logo-text {
   font-size: 3rem;
-  color: white; 
+  color: white;
   font-weight: bold;
   margin: 0;
   text-decoration: none;

@@ -4,17 +4,21 @@
     <main class="solicitacoes-admin-main">
       <div class="page-header">
         <h1>Gerenciar Solicitações de EPIs</h1>
-        <p>Analise e aprove/rejeite solicitações de empréstimo</p>
+        <p>Analise e aprove ou rejeite as solicitações de empréstimo dos alunos.</p>
       </div>
 
       <div class="filters-section">
-        <input 
-          v-model="searchQuery" 
-          type="text" 
-          placeholder="Buscar por aluno ou EPI..." 
-          class="search-input"
-        >
-        <select v-model="statusFilter" class="filter-select">
+        <div class="search-box">
+          <i class="fas fa-search search-icon"></i>
+          <input 
+            v-model="searchQuery" 
+            type="text" 
+            placeholder="Buscar por aluno ou EPI..." 
+            class="form-input"
+          >
+        </div>
+        
+        <select v-model="statusFilter" class="form-input select-input">
           <option value="">Todos os status</option>
           <option value="pendente">Pendente</option>
           <option value="aprovado">Aprovado</option>
@@ -22,32 +26,43 @@
           <option value="entregue">Entregue</option>
           <option value="devolvido">Devolvido</option>
         </select>
+
         <button 
           v-if="filteredSolicitacoes.some(s => s.status === 'pendente')"
           @click="aceitarTodos"
-          class="btn-aceitar-todos"
+          class="btn btn-success-solid"
           title="Aprovar todas as solicitações pendentes"
         >
-          ✓ Aceitar Todas
+          <i class="fas fa-check-double"></i> Aceitar Todas
         </button>
       </div>
 
-      <div v-if="loading" class="loading">
-        <i class="fas fa-spinner fa-spin"></i> Carregando solicitações...
+      <div v-if="loading" class="loading-state">
+        <i class="fas fa-spinner fa-spin"></i>
+        <p>Carregando solicitações...</p>
       </div>
 
       <div v-else-if="filteredSolicitacoes.length === 0" class="empty-state">
         <i class="fas fa-inbox"></i>
-        <p>Nenhuma solicitação encontrada</p>
+        <p>Nenhuma solicitação encontrada com os filtros atuais.</p>
       </div>
 
       <div v-else class="solicitacoes-container">
         <div v-for="solicitacao in filteredSolicitacoes" :key="solicitacao.idsolicitacoes" class="solicitacao-card">
           <div class="solicitacao-header">
-            <div class="aluno-info">
-              <h3>{{ solicitacao.aluno?.nome }} {{ solicitacao.aluno?.sobrenome }}</h3>
-              <p class="aluno-email">{{ solicitacao.aluno?.email }}</p>
+            
+            <div class="aluno-perfil-wrapper">
+              <img 
+                :src="getFotoUrl(solicitacao.aluno)" 
+                alt="Foto do Aluno" 
+                class="aluno-foto"
+              >
+              <div class="aluno-info">
+                <h3>{{ solicitacao.aluno?.nome }} {{ solicitacao.aluno?.sobrenome }}</h3>
+                <p class="aluno-email"><i class="fas fa-envelope"></i> {{ solicitacao.aluno?.email }}</p>
+              </div>
             </div>
+
             <span :class="['status-badge', `status-${solicitacao.status}`]">
               {{ getStatusText(solicitacao.status) }}
             </span>
@@ -56,21 +71,23 @@
           <div class="solicitacao-body">
             <div class="epi-info">
               <h4>{{ solicitacao.epis?.nome }}</h4>
-              <p>Tipo: {{ solicitacao.epis?.tipo || 'N/A' }}</p>
-              <p>Solicitado em: {{ formatDate(solicitacao.data_solicitacao) }}</p>
+              <div class="epi-details">
+                <span class="epi-tag"><i class="fas fa-tag"></i> {{ solicitacao.epis?.tipo || 'N/A' }}</span>
+                <span class="epi-date"><i class="fas fa-calendar-alt"></i> {{ formatDate(solicitacao.data_solicitacao) }}</span>
+              </div>
             </div>
 
             <div class="solicitacao-actions" v-if="solicitacao.status === 'pendente'">
               <button 
                 @click="aprovarSolicitacao(solicitacao)" 
-                class="btn-aprovar"
+                class="btn btn-success-outline"
                 :disabled="processandoId === solicitacao.idsolicitacoes"
               >
                 <i class="fas fa-check"></i> Aprovar
               </button>
               <button 
                 @click="abrirRejeitarModal(solicitacao)" 
-                class="btn-rejeitar"
+                class="btn btn-danger-outline"
                 :disabled="processandoId === solicitacao.idsolicitacoes"
               >
                 <i class="fas fa-times"></i> Rejeitar
@@ -80,79 +97,82 @@
             <div v-else-if="solicitacao.status === 'aprovado'" class="solicitacao-actions">
               <button 
                 @click="marcarEntregue(solicitacao)" 
-                class="btn-entregar"
+                class="btn btn-primary-outline"
+                :disabled="processandoId === solicitacao.idsolicitacoes"
               >
-                <i class="fas fa-box"></i> Marcar como Entregue
+                <i class="fas fa-box"></i> Entregar
               </button>
             </div>
 
             <div v-else-if="solicitacao.status === 'entregue'" class="solicitacao-actions">
               <button 
                 @click="marcarDevolvido(solicitacao)" 
-                class="btn-devolver"
+                class="btn btn-purple-outline"
+                :disabled="processandoId === solicitacao.idsolicitacoes"
               >
-                <i class="fas fa-undo"></i> Marcar como Devolvido
+                <i class="fas fa-undo"></i> Devolver
               </button>
             </div>
           </div>
 
           <div v-if="solicitacao.motivo_rejeicao" class="motivo-rejeicao">
-            <strong>Motivo da rejeição:</strong> {{ solicitacao.motivo_rejeicao }}
+            <i class="fas fa-exclamation-circle"></i>
+            <div>
+              <strong>Motivo da rejeição:</strong>
+              <p>{{ solicitacao.motivo_rejeicao }}</p>
+            </div>
           </div>
         </div>
       </div>
     </main>
 
-    <div v-if="showRejeitarModal" class="modal-overlay" @click="fecharRejeitarModal">
-      <div class="modal-content" @click.stop>
-        <h3>Rejeitar Solicitação</h3>
-        <p>Deseja rejeitar a solicitação de <strong>{{ solicitacaoSelecionada?.aluno?.nome }}</strong>?</p>
-        <div class="form-group">
-          <label>Motivo da rejeição (opcional)</label>
-          <textarea 
-            v-model="motivoRejeicao" 
-            placeholder="Explique o motivo da rejeição..."
-            class="textarea-input"
-          ></textarea>
-        </div>
-        <div class="modal-actions">
-          <button @click="fecharRejeitarModal" class="btn-cancel">Cancelar</button>
-          <button @click="confirmarRejeicao" class="btn-rejeitar-confirm">Confirmar Rejeição</button>
+    <Transition name="modal-fade">
+      <div v-if="showRejeitarModal" class="modal-overlay" @click="fecharRejeitarModal">
+        <div class="modal-content" @click.stop>
+          <div class="modal-header">
+            <h3>Rejeitar Solicitação</h3>
+            <button class="btn-close" @click="fecharRejeitarModal"><i class="fas fa-times"></i></button>
+          </div>
+          <div class="modal-body">
+            <p>Deseja realmente rejeitar a solicitação de <strong>{{ solicitacaoSelecionada?.aluno?.nome }}</strong>?</p>
+            <div class="form-group">
+              <label for="motivo">Motivo da rejeição (opcional)</label>
+              <textarea 
+                id="motivo"
+                v-model="motivoRejeicao" 
+                placeholder="Explique o motivo da rejeição para o aluno..."
+                class="form-input textarea-input"
+              ></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button @click="fecharRejeitarModal" class="btn btn-secondary">Cancelar</button>
+            <button @click="confirmarRejeicao" class="btn btn-danger-solid">Confirmar Rejeição</button>
+          </div>
         </div>
       </div>
-    </div>
+    </Transition>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import HeaderGeral from '../components/HeaderGeral.vue'
-// importa a função que conecta com o banco de dados do supabase
 import { useSupabase } from '../composables/useSupabase'
 import { useRouter } from 'vue-router'
 
-// pega a conexão com o supabase e a sessão do usuário logado
-const { supabase, session } = useSupabase()
+const { supabase, session, registrarEntregaEPI, removerEntregaEPI } = useSupabase()
 const router = useRouter()
 
-// armazena todas as solicitações de empréstimo
 const solicitacoes = ref([])
-// armazena o texto que o usuário digita para buscar
 const searchQuery = ref('')
-// armazena qual status está selecionado no filtro
 const statusFilter = ref('')
-// controla se está carregando os dados do banco
 const loading = ref(true)
-// controla se a janela de rejeição deve aparecer ou não
 const showRejeitarModal = ref(false)
-// armazena a solicitação selecionada para rejeitar
 const solicitacaoSelecionada = ref(null)
-// armazena o motivo do texto que o usuário digita na rejeição
 const motivoRejeicao = ref('')
-// armazena o id da solicitação que está sendo processada
 const processandoId = ref(null)
 
-// filtra as solicitações de acordo com o texto de busca e o status selecionado
 const filteredSolicitacoes = computed(() => {
   return solicitacoes.value.filter(sol => {
     const matchesSearch = !searchQuery.value || 
@@ -166,13 +186,24 @@ const filteredSolicitacoes = computed(() => {
   })
 })
 
-// converte a data do banco em um formato legível para o usuário
+// Função para retornar a foto do banco ou gerar uma imagem com as iniciais
+const getFotoUrl = (aluno) => {
+  if (aluno?.foto) return aluno.foto;
+  
+  // Se não tiver foto, gera um avatar com as iniciais do nome e sobrenome
+  const inicialNome = aluno?.nome?.charAt(0) || '';
+  const inicialSobrenome = aluno?.sobrenome?.charAt(0) || '';
+  const iniciais = `${inicialNome}${inicialSobrenome}`.toUpperCase() || 'AL';
+  
+  // Retorna uma imagem gerada automaticamente
+  return `https://ui-avatars.com/api/?name=${iniciais}&background=3b82f6&color=fff&size=128`;
+}
+
 const formatDate = (dateString) => {
   if (!dateString) return '---'
   return new Date(dateString).toLocaleDateString('pt-BR')
 }
 
-// converte o status da solicitação em um texto mais bonito para mostrar
 const getStatusText = (status) => {
   const statusMap = {
     pendente: 'Pendente',
@@ -184,19 +215,26 @@ const getStatusText = (status) => {
   return statusMap[status] || status
 }
 
-// busca todas as solicitações no banco de dados com os dados do aluno e do epi
 const loadSolicitacoes = async () => {
   try {
-    // consulta a tabela solicitacoes no supabase
     const { data, error } = await supabase
       .from('solicitacoes')
       .select(`
-        *,
+        idsolicitacoes,
+        aluno_id,
+        epis_id,
+        status,
+        data_solicitacao,
+        data_aprovacao,
+        data_entrega,
+        data_devolucao,
+        motivo_rejeicao,
         aluno:aluno_id (
           nome,
           sobrenome,
           email,
-          cpf
+          cpf,
+          foto
         ),
         epis:epis_id (
           nome,
@@ -204,208 +242,148 @@ const loadSolicitacoes = async () => {
           codigo_patrimonio
         )
       `)
-      // ordena as solicitações pela data mais recente primeiro
       .order('data_solicitacao', { ascending: false })
 
     if (error) throw error
-    // armazena os dados das solicitações
-    console.log('Solicitações carregadas:', data)
     solicitacoes.value = data || []
   } catch (error) {
     console.error('Erro ao carregar solicitações:', error)
-    alert('Erro ao carregar solicitações')
   } finally {
-    // marca como carregamento finalizado
     loading.value = false
   }
 }
 
-// aprova uma solicitação de empréstimo de epi
 const aprovarSolicitacao = async (solicitacao) => {
-  // pede confirmação ao usuário antes de aprovar
   if (!confirm(`Aprovar solicitação de ${solicitacao.aluno?.nome}?`)) return
-
-  // marca qual solicitação está sendo processada para desabilitar o botão
   processandoId.value = solicitacao.idsolicitacoes
 
   try {
-    // atualiza o status no banco de dados para aprovado
     const { error } = await supabase
       .from('solicitacoes')
       .update({
         status: 'aprovado',
-        // registra a data de aprovação de hoje
         data_aprovacao: new Date().toISOString().split('T')[0]
       })
-      // encontra a solicitação pelo id
       .eq('idsolicitacoes', solicitacao.idsolicitacoes)
 
     if (error) throw error
-
-    alert('Solicitação aprovada com sucesso!')
-    // recarrega a lista de solicitações
     loadSolicitacoes()
   } catch (error) {
     console.error('Erro ao aprovar solicitação:', error)
     alert('Erro ao aprovar solicitação: ' + error.message)
   } finally {
-    // libera o processamento
     processandoId.value = null
   }
 }
 
-// abre a janela para rejeitar uma solicitação
 const abrirRejeitarModal = (solicitacao) => {
-  // armazena qual solicitação vai ser rejeitada
   solicitacaoSelecionada.value = solicitacao
-  // limpa o campo de motivo
   motivoRejeicao.value = ''
-  // mostra a janela
   showRejeitarModal.value = true
 }
 
-// fecha a janela de rejeição
 const fecharRejeitarModal = () => {
-  // esconde a janela
   showRejeitarModal.value = false
-  // limpa os dados
   solicitacaoSelecionada.value = null
   motivoRejeicao.value = ''
 }
 
-// rejeita uma solicitação de empréstimo com motivo
 const confirmarRejeicao = async () => {
-  // verifica se tem uma solicitação selecionada
   if (!solicitacaoSelecionada.value) return
-
-  // marca qual solicitação está sendo processada
   processandoId.value = solicitacaoSelecionada.value.idsolicitacoes
 
   try {
-    // atualiza o status no banco de dados para rejeitado
     const { error } = await supabase
       .from('solicitacoes')
       .update({
         status: 'rejeitado',
-        // salva o motivo que o usuário digitou
         motivo_rejeicao: motivoRejeicao.value || null
       })
-      // encontra a solicitação pelo id
       .eq('idsolicitacoes', solicitacaoSelecionada.value.idsolicitacoes)
 
     if (error) throw error
-
-    alert('Solicitação rejeitada com sucesso!')
-    // fecha a janela
     fecharRejeitarModal()
-    // recarrega a lista de solicitações
     loadSolicitacoes()
   } catch (error) {
     console.error('Erro ao rejeitar solicitação:', error)
     alert('Erro ao rejeitar solicitação: ' + error.message)
   } finally {
-    // libera o processamento
     processandoId.value = null
   }
 }
 
-// marca uma solicitação aprovada como entregue
 const marcarEntregue = async (solicitacao) => {
-  // pede confirmação ao usuário
-  if (!confirm('Marcar como entregue?')) return
-
-  // marca qual solicitação está sendo processada
+  if (!confirm('Confirmar entrega do EPI ao aluno?')) return
   processandoId.value = solicitacao.idsolicitacoes
 
   try {
-    // atualiza o status no banco de dados para entregue
-    const { error } = await supabase
+    const { error: updateError } = await supabase
       .from('solicitacoes')
       .update({
         status: 'entregue',
-        // registra a data de entrega de hoje
         data_entrega: new Date().toISOString().split('T')[0]
       })
-      // encontra a solicitação pelo id
       .eq('idsolicitacoes', solicitacao.idsolicitacoes)
 
-    if (error) throw error
+    if (updateError) throw updateError
 
-    alert('Marcado como entregue!')
-    // recarrega a lista de solicitações
+    const dataEntrega = new Date().toISOString().split('T')[0]
+    await registrarEntregaEPI(
+      solicitacao.aluno_id,
+      solicitacao.epis_id,
+      dataEntrega
+    )
     loadSolicitacoes()
   } catch (error) {
     console.error('Erro ao marcar como entregue:', error)
     alert('Erro: ' + error.message)
   } finally {
-    // libera o processamento
     processandoId.value = null
   }
 }
 
-// marca uma solicitação entregue como devolvida
 const marcarDevolvido = async (solicitacao) => {
-  // pede confirmação ao usuário
-  if (!confirm('Marcar como devolvido?')) return
-
-  // marca qual solicitação está sendo processada
+  if (!confirm('Confirmar devolução do EPI?')) return
   processandoId.value = solicitacao.idsolicitacoes
 
   try {
-    // atualiza o status no banco de dados para devolvido
-    const { error } = await supabase
+    const { error: updateError } = await supabase
       .from('solicitacoes')
       .update({
         status: 'devolvido',
-        // registra a data de devolução de hoje
         data_devolucao: new Date().toISOString().split('T')[0]
       })
-      // encontra a solicitação pelo id
       .eq('idsolicitacoes', solicitacao.idsolicitacoes)
 
-    if (error) throw error
+    if (updateError) throw updateError
 
-    alert('Marcado como devolvido!')
-    // recarrega a lista de solicitações
+    await removerEntregaEPI(solicitacao.aluno_id, solicitacao.epis_id)
     loadSolicitacoes()
   } catch (error) {
     console.error('Erro ao marcar como devolvido:', error)
     alert('Erro: ' + error.message)
   } finally {
-    // libera o processamento
     processandoId.value = null
   }
 }
 
-// aprova todas as solicitações pendentes de uma vez
 const aceitarTodos = async () => {
   const pendentes = solicitacoes.value.filter(s => s.status === 'pendente')
-  
-  if (pendentes.length === 0) {
-    alert('Não há solicitações pendentes para aceitar')
-    return
-  }
+  if (pendentes.length === 0) return
 
   const confirmar = confirm(`Deseja aceitar todas as ${pendentes.length} solicitações pendentes?`)
   if (!confirmar) return
 
   try {
-    // atualiza todas as solicitações pendentes
     for (const solicitacao of pendentes) {
-      const { error } = await supabase
+      await supabase
         .from('solicitacoes')
         .update({
           status: 'aprovado',
           data_aprovacao: new Date().toISOString().split('T')[0]
         })
         .eq('idsolicitacoes', solicitacao.idsolicitacoes)
-
-      if (error) {
-        console.error(`Erro ao aprovar solicitação ${solicitacao.idsolicitacoes}:`, error)
-      }
     }
-
-    alert(`${pendentes.length} solicitação(ões) aprovada(s) com sucesso!`)
     loadSolicitacoes()
   } catch (error) {
     console.error('Erro ao aceitar todos:', error)
@@ -413,360 +391,477 @@ const aceitarTodos = async () => {
   }
 }
 
-// executa quando a página carregar
 onMounted(() => {
-  // carrega a lista de solicitações quando entra na página
   loadSolicitacoes()
 })
 </script>
 
 <style scoped>
+
 .gerenciar-solicitacoes {
   min-height: 100vh;
   background-color: #293140;
+  color: #edf2f7;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 .solicitacoes-admin-main {
-  padding: 20px 50px;
-  color: #edf2f7;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 24px;
 }
 
 .page-header {
-  margin-bottom: 30px;
+  margin-bottom: 32px;
 }
 
 .page-header h1 {
-  font-size: 2rem;
-  margin-bottom: 5px;
-  color: white;
+  font-size: 2.2rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #ffffff;
+  letter-spacing: -0.5px;
 }
 
 .page-header p {
-  color: rgba(255, 255, 255, 0.8);
+  color: #94a3b8;
+  font-size: 1.05rem;
 }
 
 .filters-section {
   display: flex;
-  gap: 15px;
-  margin-bottom: 20px;
+  gap: 16px;
+  margin-bottom: 32px;
   flex-wrap: wrap;
+  align-items: center;
+  background: #2d3748;
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-.search-input, .filter-select {
-  padding: 10px 15px;
-  border: none;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  font-size: 1rem;
-}
-
-.search-input::placeholder {
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.search-input, .filter-select {
+.search-box {
+  position: relative;
   flex: 1;
-  min-width: 200px;
+  min-width: 250px;
 }
 
-.btn-aceitar-todos {
-  padding: 10px 20px;
-  background-color: #4ade80;
-  color: #1a1a1a;
-  border: none;
+.search-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
+  background: rgba(15, 23, 42, 0.4);
+  color: #f8fafc;
+  font-size: 0.95rem;
+  transition: all 0.2s ease;
+}
+
+.search-box .form-input {
+  padding-left: 40px;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.form-input::placeholder {
+  color: #64748b;
+}
+
+.select-input {
+  flex: 0 1 200px;
   cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 16px;
+  padding-right: 40px;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 8px;
   font-weight: 600;
   font-size: 0.95rem;
-  transition: all 0.3s ease;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
   white-space: nowrap;
 }
 
-.btn-aceitar-todos:hover {
-  background-color: #22c55e;
-  box-shadow: 0 4px 12px rgba(74, 222, 128, 0.4);
-}
-
-.loading {
-  text-align: center;
-  padding: 40px;
-  font-size: 1.2rem;
-}
-
-.empty-state {
-  text-align: center;
-  padding: 60px 20px;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.empty-state i {
-  font-size: 3rem;
-  margin-bottom: 20px;
+.btn:disabled {
   opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-success-solid {
+  background-color: #10b981;
+  color: #ffffff;
+}
+.btn-success-solid:hover:not(:disabled) {
+  background-color: #059669;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.btn-success-outline {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+.btn-success-outline:hover:not(:disabled) {
+  background: #10b981;
+  color: #ffffff;
+}
+
+.btn-danger-solid {
+  background-color: #ef4444;
+  color: #ffffff;
+}
+.btn-danger-solid:hover:not(:disabled) {
+  background-color: #dc2626;
+}
+
+.btn-danger-outline {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+.btn-danger-outline:hover:not(:disabled) {
+  background: #ef4444;
+  color: #ffffff;
+}
+
+.btn-primary-outline {
+  background: rgba(59, 130, 246, 0.1);
+  color: #3b82f6;
+  border-color: rgba(59, 130, 246, 0.3);
+}
+.btn-primary-outline:hover:not(:disabled) {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+.btn-purple-outline {
+  background: rgba(168, 85, 247, 0.1);
+  color: #a855f7;
+  border-color: rgba(168, 85, 247, 0.3);
+}
+.btn-purple-outline:hover:not(:disabled) {
+  background: #a855f7;
+  color: #ffffff;
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: #cbd5e1;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.btn-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.loading-state, .empty-state {
+  text-align: center;
+  padding: 80px 20px;
+  background: #293140;
+  border-radius: 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+}
+
+.loading-state i, .empty-state i {
+  font-size: 2.5rem;
+  margin-bottom: 16px;
+  color: #475569;
 }
 
 .solicitacoes-container {
-  display: grid;
-  gap: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 .solicitacao-card {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #1a202c;
+  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  padding: 20px;
-  transition: all 0.3s;
+  padding: 24px;
+  transition: all 0.2s ease;
 }
 
 .solicitacao-card:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
 }
 
 .solicitacao-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 15px;
-  padding-bottom: 15px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  align-items: flex-start;
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+/* CLASSES NOVAS PARA A FOTO DO ALUNO */
+.aluno-perfil-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.aluno-foto {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  background-color: #2d3748;
+}
+/* ================================== */
+
 .aluno-info h3 {
-  margin: 0;
-  font-size: 1.1rem;
+  margin: 0 0 4px 0;
+  font-size: 1.15rem;
+  color: #f8fafc;
 }
 
 .aluno-email {
-  margin: 5px 0 0 0;
-  color: rgba(255, 255, 255, 0.6);
+  margin: 0;
+  color: #94a3b8;
   font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .status-badge {
-  padding: 6px 12px;
+  padding: 6px 14px;
   border-radius: 20px;
-  font-weight: bold;
-  font-size: 0.85rem;
-  white-space: nowrap;
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
 }
 
-.status-pendente {
-  background: rgba(255, 193, 7, 0.2);
-  color: #ffc107;
-  border: 1px solid #ffc107;
-}
+.status-pendente { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+.status-aprovado { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+.status-rejeitado { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+.status-entregue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
+.status-devolvido { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
 
-.status-aprovado {
-  background: rgba(76, 175, 80, 0.2);
-  color: #4caf50;
-  border: 1px solid #4caf50;
-}
-
-.status-rejeitado {
-  background: rgba(244, 67, 54, 0.2);
-  color: #f44336;
-  border: 1px solid #f44336;
-}
-
-.status-entregue {
-  background: rgba(33, 150, 243, 0.2);
-  color: #2196f3;
-  border: 1px solid #2196f3;
-}
-
-.status-devolvido {
-  background: rgba(156, 39, 176, 0.2);
-  color: #9c27b0;
-  border: 1px solid #9c27b0;
-}
-
+/* Corpo do Card */
 .solicitacao-body {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 20px;
 }
 
-.epi-info {
-  flex: 1;
-}
-
 .epi-info h4 {
-  margin: 0 0 8px 0;
-  font-size: 1rem;
+  margin: 0 0 10px 0;
+  font-size: 1.05rem;
+  color: #f1f5f9;
 }
 
-.epi-info p {
-  margin: 4px 0;
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 0.9rem;
+.epi-details {
+  display: flex;
+  gap: 16px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.epi-details span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .solicitacao-actions {
   display: flex;
-  gap: 10px;
-}
-
-.btn-aprovar, .btn-rejeitar, .btn-entregar, .btn-devolver, .btn-rejeitar-confirm {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: bold;
-  transition: all 0.3s;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-.btn-aprovar {
-  background: rgba(76, 175, 80, 0.3);
-  color: #4caf50;
-  border: 1px solid #4caf50;
-}
-
-.btn-aprovar:hover:not(:disabled) {
-  background: #4caf50;
-  color: white;
-}
-
-.btn-rejeitar {
-  background: rgba(244, 67, 54, 0.3);
-  color: #f44336;
-  border: 1px solid #f44336;
-}
-
-.btn-rejeitar:hover:not(:disabled) {
-  background: #f44336;
-  color: white;
-}
-
-.btn-entregar {
-  background: rgba(33, 150, 243, 0.3);
-  color: #2196f3;
-  border: 1px solid #2196f3;
-}
-
-.btn-entregar:hover {
-  background: #2196f3;
-  color: white;
-}
-
-.btn-devolver {
-  background: rgba(156, 39, 176, 0.3);
-  color: #9c27b0;
-  border: 1px solid #9c27b0;
-}
-
-.btn-devolver:hover {
-  background: #9c27b0;
-  color: white;
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+  gap: 12px;
 }
 
 .motivo-rejeicao {
-  margin-top: 15px;
-  padding: 12px;
-  background: rgba(244, 67, 54, 0.1);
-  border-left: 3px solid #f44336;
-  border-radius: 4px;
-  color: rgba(255, 255, 255, 0.9);
+  margin-top: 20px;
+  padding: 16px;
+  background: rgba(239, 68, 68, 0.05);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: 8px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.motivo-rejeicao i {
+  color: #f87171;
+  margin-top: 3px;
+}
+
+.motivo-rejeicao strong {
+  color: #f87171;
   font-size: 0.9rem;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.motivo-rejeicao p {
+  margin: 0;
+  color: #cbd5e1;
+  font-size: 0.95rem;
+  line-height: 1.5;
 }
 
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
+  inset: 0;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 20px;
 }
 
 .modal-content {
-  background: #383e49;
-  border-radius: 12px;
-  padding: 30px;
+  background: #1e2532;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  width: 100%;
   max-width: 500px;
-  width: 90%;
-  color: white;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
 }
 
-.modal-content h3 {
+.modal-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  color: #f8fafc;
+}
+
+.btn-close {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.btn-close:hover {
+  color: #ffffff;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.modal-body p {
   margin-top: 0;
-  font-size: 1.3rem;
-  margin-bottom: 15px;
-}
-
-.modal-content p {
   margin-bottom: 20px;
-  color: rgba(255, 255, 255, 0.8);
-}
-
-.form-group {
-  margin-bottom: 20px;
+  color: #cbd5e1;
+  line-height: 1.5;
 }
 
 .form-group label {
   display: block;
   margin-bottom: 8px;
-  font-weight: bold;
+  font-weight: 500;
+  color: #e2e8f0;
+  font-size: 0.95rem;
 }
 
 .textarea-input {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
-  background: rgba(255, 255, 255, 0.05);
-  color: white;
-  font-family: inherit;
   resize: vertical;
-  min-height: 100px;
+  min-height: 120px;
+  font-family: inherit;
+  line-height: 1.5;
 }
 
-.textarea-input::placeholder {
-  color: rgba(255, 255, 255, 0.5);
-}
-
-.modal-actions {
+.modal-footer {
+  padding: 16px 24px;
+  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
-  gap: 10px;
   justify-content: flex-end;
+  gap: 12px;
 }
 
-.btn-cancel {
-  padding: 10px 20px;
-  background: rgba(255, 255, 255, 0.1);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.3s;
+.modal-fade-enter-active,
+.modal-fade-leave-active {
+  transition: opacity 0.3s ease;
 }
 
-.btn-cancel:hover {
-  background: rgba(255, 255, 255, 0.2);
+.modal-fade-enter-from,
+.modal-fade-leave-to {
+  opacity: 0;
 }
 
-.btn-rejeitar-confirm {
-  padding: 10px 20px;
-  background: #f44336;
-  color: white;
-  border: none;
-}
-
-.btn-rejeitar-confirm:hover {
-  background: #da190b;
+@media (max-width: 768px) {
+  .solicitacoes-admin-main {
+    padding: 20px 16px;
+  }
+  
+  .filters-section {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .select-input {
+    flex: none;
+  }
+  
+  .solicitacao-header {
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .status-badge {
+    align-self: flex-start;
+  }
+  
+  .solicitacao-body {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .solicitacao-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+  
+  .solicitacao-actions .btn {
+    width: 100%;
+  }
 }
 </style>

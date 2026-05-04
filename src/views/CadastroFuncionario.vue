@@ -1,71 +1,87 @@
 <template>
-  <div class="cadastro-container">
+  <div class="funcionarios-container" @click="activeMenu = null">
     <HeaderGeral />
     
-    <div class="page-header">
-      <div>
-        <h1>Funcionários</h1>
-        <p>Gerencie todos os colaboradores do sistema</p>
-      </div>
-      <div class="header-buttons">
-        <button @click="openModal" class="btn-cadastrar">➕ Cadastrar Funcionário</button>
-      </div>
-    </div>
-
-    <div class="funcionarios-content">
-      <div class="search-section">
-        <input 
-          v-model="searchQuery" 
-          type="text" 
-          placeholder="🔍 Buscar por nome, email ou CPF..."
-          class="search-input"
-        />
-      </div>
-
-      <div v-if="loadingFuncionarios" class="loading">
-        ⏳ Carregando funcionários...
-      </div>
-
-      <div v-else-if="filteredFuncionarios.length === 0" class="empty-state">
-        <p>Nenhum funcionário encontrado</p>
-      </div>
-
-      <div v-else class="funcionarios-grid">
-        <div v-for="func in filteredFuncionarios" :key="func.idfuncionario" class="funcionario-card">
-          <div class="card-header">
-            <div class="func-name">
-              <h3>{{ func.nome }} {{ func.sobrenome }}</h3>
-              <p class="func-role">{{ func.funcao || 'Sem função' }}</p>
-            </div>
-            <span :class="['status-badge', func.status?.toLowerCase() === 'ativo' ? 'ativo' : 'inativo']">
-              {{ func.status || 'Desconhecido' }}
-            </span>
-          </div>
-
-          <div class="card-body">
-            <div class="info-row">
-              <label>CPF:</label>
-              <span>{{ func.cpf || '---' }}</span>
-            </div>
-            <div class="info-row">
-              <label>Email:</label>
-              <span>{{ func.email || '---' }}</span>
-            </div>
-            <div class="info-row">
-              <label>Telefone:</label>
-              <span>{{ func.telefone || '---' }}</span>
-            </div>
-          </div>
-
-          <div class="card-footer">
-            <button @click="editarFuncionario(func)" class="btn-edit">Editar</button>
-            <button @click="deletarFuncionario(func.idfuncionario)" class="btn-delete">Deletar</button>
-          </div>
+    <main class="funcionarios-main">
+      <div class="funcionarios-header">
+        <div>
+          <h1 class="funcionarios-title">Gestão de Funcionários</h1>
+          <p class="sub">Total de funcionário cadastrados: {{ stats.total }}</p>
         </div>
       </div>
-    </div>
 
-    <!-- Modal de Cadastro/Edição -->
+      <div class="filter-section">
+        <div class="search-box">
+          <input 
+            v-model="searchQuery" 
+            type="text" 
+            placeholder="🔍 Buscar por nome, email ou CPF..."
+            class="search-input"
+          />
+        </div>
+        <div class="filter-buttons">
+          <button class="btn-filter" @click="openModal">➕ Cadastrar Funcionário</button>
+        </div>
+      </div>
+
+      <div class="table-section">
+        <div v-if="loadingFuncionarios" class="loading">
+          ⏳ Carregando funcionários...
+        </div>
+
+        <table v-else class="funcionarios-table">
+          <thead>
+            <tr>
+              <th>NOME</th>
+              <th>FUNÇÃO</th>
+              <th>EMAIL</th>
+              <th>CPF</th>
+              <th>TELEFONE</th>
+              <th>STATUS</th>
+              <th>AÇÕES</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="func in filteredFuncionarios" :key="func.idfuncionario">
+              <td>
+                <div class="user-info">
+                  <div class="avatar-mini">
+                    <img v-if="func.foto" :src="func.foto" alt="Foto do funcionário" />
+                    <span v-else class="avatar-placeholder">
+                      {{ func.nome ? func.nome.charAt(0).toUpperCase() : '👤' }}
+                    </span>
+                  </div>
+                  <strong>{{ func.nome }} {{ func.sobrenome }}</strong>
+                </div>
+              </td>
+              <td>{{ func.funcao || 'Sem função' }}</td>
+              <td>{{ func.email || 'Não informado' }}</td>
+              <td>{{ func.cpf || 'Não informado' }}</td>
+              <td>{{ func.telefone || 'Não informado' }}</td>
+              <td>
+                <span :class="['status-badge', func.status?.toLowerCase() === 'ativo' ? 'ativo' : 'inativo']">
+                  {{ func.status || 'Desconhecido' }}
+                </span>
+              </td>
+              <td class="actions">
+                <button class="btn-action" @click="openMenu($event, func)" title="Opções">
+                  ⋮
+                </button>
+                <div v-if="activeMenu === func.idfuncionario" class="action-menu" @click.stop>
+                  <button @click="editarFuncionario(func)" class="menu-item">✏️ Editar</button>
+                  <div class="divider"></div>
+                  <button @click="deletarFuncionario(func.idfuncionario)" class="menu-item delete">🗑️ Excluir</button>
+                </div>
+              </td>
+            </tr>
+            <tr v-if="filteredFuncionarios.length === 0 && !loadingFuncionarios">
+              <td colspan="7" class="no-data">Nenhum funcionário encontrado na busca.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+
     <div v-if="showModal" class="modal-overlay" @click="closeModal">
       <div class="modal-content" @click.stop>
         <div class="modal-header">
@@ -189,8 +205,8 @@
           </div>
 
           <div class="modal-footer">
-            <button type="submit" class="btn-submit">{{ isEditando ? 'Atualizar' : 'Cadastrar' }} Funcionário</button>
             <button type="button" class="btn-cancel" @click="closeModal">Cancelar</button>
+            <button type="submit" class="btn-submit">{{ isEditando ? 'Atualizar' : 'Cadastrar' }}</button>
           </div>
         </form>
       </div>
@@ -211,6 +227,8 @@ const isEditando = ref(false)
 const loadingFuncionarios = ref(true)
 const funcionarios = ref([])
 const searchQuery = ref('')
+const activeMenu = ref(null)
+const stats = ref({ total: 0 })
 
 // Form data
 const nome = ref('')
@@ -229,10 +247,10 @@ const editandoId = ref(null)
 const filteredFuncionarios = computed(() => {
   const query = searchQuery.value.toLowerCase()
   return funcionarios.value.filter(func => 
-    func.nome.toLowerCase().includes(query) ||
-    func.sobrenome.toLowerCase().includes(query) ||
-    func.email.toLowerCase().includes(query) ||
-    func.cpf.includes(query)
+    (func.nome || '').toLowerCase().includes(query) ||
+    (func.sobrenome || '').toLowerCase().includes(query) ||
+    (func.email || '').toLowerCase().includes(query) ||
+    (func.cpf || '').includes(query)
   )
 })
 
@@ -245,6 +263,7 @@ const loadFuncionarios = async () => {
 
     if (error) throw error
     funcionarios.value = data || []
+    stats.value.total = funcionarios.value.length
   } catch (error) {
     console.error('Erro ao carregar funcionários:', error)
     alert('Erro ao carregar funcionários')
@@ -264,6 +283,11 @@ const closeModal = () => {
   resetForm()
 }
 
+const openMenu = (event, func) => {
+  event.stopPropagation()
+  activeMenu.value = activeMenu.value === func.idfuncionario ? null : func.idfuncionario
+}
+
 const resetForm = () => {
   nome.value = ''
   sobrenome.value = ''
@@ -277,6 +301,7 @@ const resetForm = () => {
   showConfirmPassword.value = false
   isEditando.value = false
   editandoId.value = null
+  activeMenu.value = null
 }
 
 const formatCPF = () => {
@@ -357,7 +382,15 @@ const handleCadastro = async () => {
         funcao: funcao.value || 'Padrão'
       }
 
-      await signUp(email.value.trim(), password.value, userData)
+      const { error: signUpError } = await supabase.auth.signUp({
+      email: email.value.trim(),
+      password: password.value,
+      options: {
+      data: userData
+  }
+})
+
+if (signUpError) throw signUpError
       alert('Funcionário cadastrado com sucesso!')
     }
 
@@ -379,9 +412,11 @@ const editarFuncionario = (func) => {
   funcao.value = func.funcao
   telefone.value = func.telefone || ''
   showModal.value = true
+  activeMenu.value = null
 }
 
 const deletarFuncionario = async (id) => {
+  activeMenu.value = null
   if (!confirm('Deseja deletar este funcionário?')) return
 
   try {
@@ -405,236 +440,275 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.cadastro-container {
-  width: 100%;
+.funcionarios-container {
   min-height: 100vh;
-  background-color: #293140;
+  background: #293140;
+  color: #edf2f7;
 }
 
-.page-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 2rem 3rem;
-  border-bottom: 1px solid #556274;
-  flex-wrap: wrap;
-  gap: 1rem;
-}
-
-.page-header h1 {
-  font-size: 2rem;
-  color: #ffffff;
-  margin: 0;
-  font-weight: 700;
-}
-
-.page-header p {
-  color: #b0b5be;
-  margin: 0.5rem 0 0 0;
-}
-
-.header-buttons {
-  display: flex;
-  gap: 0.75rem;
-}
-
-.btn-cadastrar {
-  background-color: #f05432;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s ease;
-}
-
-.btn-cadastrar:hover {
-  background-color: #e54320;
-  box-shadow: 0 4px 12px rgba(240, 84, 50, 0.4);
-}
-
-.funcionarios-content {
-  padding: 2rem 3rem;
-  max-width: 1600px;
+.funcionarios-main {
+  padding: 32px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
-.search-section {
-  margin-bottom: 2rem;
+.funcionarios-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.funcionarios-title {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: white;
+  margin: 0 0 4px 0;
+}
+
+.sub {
+  color: #a0aec0;
+  margin: 0;
+}
+
+.filter-section {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 24px;
+}
+
+.search-box {
+  flex: 1;
+  max-width: 400px;
 }
 
 .search-input {
   width: 100%;
-  background-color: #3d4555;
-  border: 1px solid #556274;
+  padding: 10px 16px;
   border-radius: 8px;
-  padding: 0.75rem 1rem;
-  color: #e0e7ff;
-  font-size: 0.95rem;
-  transition: all 0.3s ease;
-  box-sizing: border-box;
-}
-
-.search-input::placeholder {
-  color: #b0b5be;
+  background: #1a202c;
+  border: 1px solid #4a5568;
+  color: #edf2f7;
+  transition: border-color 0.3s;
 }
 
 .search-input:focus {
   outline: none;
   border-color: #f05432;
-  background-color: #45505f;
 }
 
-.loading, .empty-state {
+.btn-filter {
+  background: #f05432;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background 0.3s;
+}
+
+.btn-filter:hover {
+  background: #d94a2b;
+}
+
+/* Tabela */
+.table-section {
+  background: #1a202c;
+  border-radius: 12px;
+  padding: 1px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  overflow: visible;
+}
+
+.funcionarios-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.funcionarios-table thead {
+  background: #2d3748;
+}
+
+.funcionarios-table th {
+  padding: 16px;
+  text-align: left;
+  font-size: 0.85rem;
+  color: #a0aec0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.funcionarios-table td {
+  padding: 16px;
+  text-align: left;
+  border-bottom: 1px solid #2d3748;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Avatar Placeholder/Img */
+.avatar-mini {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: #3d4555;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.avatar-mini img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  color: #edf2f7;
+  font-weight: 700;
+  font-size: 1rem;
+}
+
+/* Status Badge */
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: bold;
+}
+
+.status-badge.ativo {
+  background-color: rgba(74, 222, 128, 0.15);
+  color: #4ade80;
+  border: 1px solid rgba(74, 222, 128, 0.3);
+}
+
+.status-badge.inativo {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.no-data {
+  text-align: center;
+  padding: 32px;
+  color: #a0aec0;
+}
+
+.loading {
   text-align: center;
   padding: 3rem;
   color: #b0b5be;
   font-size: 1.1rem;
 }
 
-.funcionarios-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1.5rem;
+/* Menu de Ações (Três Pontos) */
+.actions {
+  position: relative;
+  width: 60px;
+  text-align: center;
 }
 
-.funcionario-card {
-  background-color: #3d4555;
-  border-radius: 12px;
-  border: 1px solid #556274;
-  overflow: hidden;
-  transition: all 0.3s ease;
-}
-
-.funcionario-card:hover {
-  border-color: #f05432;
-  box-shadow: 0 8px 16px rgba(240, 84, 50, 0.2);
-}
-
-.card-header {
-  background-color: #2d3748;
-  padding: 1.5rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  border-bottom: 1px solid #556274;
-}
-
-.func-name h3 {
-  color: #ffffff;
-  margin: 0;
-  font-size: 1.1rem;
-}
-
-.func-role {
-  color: #b0b5be;
-  font-size: 0.85rem;
-  margin: 0.25rem 0 0 0;
-}
-
-.status-badge {
-  display: inline-block;
-  padding: 0.35rem 0.75rem;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
-.status-badge.ativo {
-  background-color: #4ade80;
-  color: #1a1a1a;
-}
-
-.status-badge.inativo {
-  background-color: #ef4444;
-  color: white;
-}
-
-.card-body {
-  padding: 1.5rem;
-}
-
-.info-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.5rem 0;
-  color: #e0e7ff;
-  font-size: 0.9rem;
-}
-
-.info-row label {
-  font-weight: 600;
-  color: #b0b5be;
-}
-
-.card-footer {
-  padding: 1rem 1.5rem;
-  background-color: #2d3748;
-  border-top: 1px solid #556274;
-  display: flex;
-  gap: 0.75rem;
-}
-
-.btn-edit, .btn-delete {
-  flex: 1;
-  padding: 0.5rem 1rem;
+.btn-action {
+  background: transparent;
   border: none;
-  border-radius: 6px;
+  color: #a0aec0;
   cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s ease;
+  font-size: 1.5rem;
+  padding: 4px 12px;
+  transition: color 0.2s;
+}
+
+.btn-action:hover {
+  color: #fff;
+}
+
+.action-menu {
+  position: absolute;
+  right: 20px;
+  top: 40px;
+  background: #2d3748;
+  border: 1px solid #4a5568;
+  border-radius: 8px;
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  z-index: 10;
+  min-width: 150px;
+}
+
+.action-menu .menu-item {
+  display: block;
+  padding: 12px 16px;
+  border: none;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  color: #edf2f7;
+  cursor: pointer;
   font-size: 0.9rem;
+  transition: background 0.2s;
 }
 
-.btn-edit {
-  background-color: #556274;
-  color: #e0e7ff;
+.action-menu .menu-item:hover {
+  background: #4a5568;
 }
 
-.btn-edit:hover {
-  background-color: #6b7280;
+.divider {
+  height: 1px;
+  background: #4a5568;
+  margin: 4px 0;
 }
 
-.btn-delete {
-  background-color: #ef4444;
-  color: white;
+.action-menu .menu-item.delete {
+  color: #fc8181;
 }
 
-.btn-delete:hover {
-  background-color: #dc2626;
+.action-menu .menu-item.delete:hover {
+  background: rgba(252, 129, 129, 0.1);
 }
 
 /* Modal */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.7);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 100;
+  backdrop-filter: blur(4px);
 }
 
 .modal-content {
-  background-color: #3d4555;
+  background: #1a202c;
+  width: 100%;
+  max-width: 700px;
   border-radius: 12px;
-  padding: 2rem;
-  max-width: 600px;
-  width: 90%;
+  padding: 24px;
+  color: #edf2f7;
+  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.5);
+  border: 1px solid #2d3748;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #2d3748;
+  padding-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .modal-header h2 {
@@ -644,17 +718,15 @@ onMounted(() => {
 }
 
 .btn-close {
-  background: none;
+  background: transparent;
   border: none;
-  color: #b0b5be;
-  font-size: 2rem;
+  color: #a0aec0;
+  font-size: 1.5rem;
   cursor: pointer;
-  padding: 0;
-  line-height: 1;
 }
 
 .btn-close:hover {
-  color: #f05432;
+  color: #fff;
 }
 
 .modal-form {
@@ -699,17 +771,17 @@ onMounted(() => {
 }
 
 .form-group label {
-  color: #e0e7ff;
-  font-weight: 500;
-  font-size: 0.9rem;
+  color: #a0aec0;
+  font-weight: bold;
+  font-size: 0.85rem;
 }
 
 .input-field {
-  background-color: #293140;
-  border: 1px solid #556274;
+  background-color: #2d3748;
+  border: 1px solid #4a5568;
   border-radius: 6px;
   padding: 0.75rem;
-  color: #e0e7ff;
+  color: #fff;
   font-size: 0.95rem;
   transition: all 0.3s ease;
   width: 100%;
@@ -719,7 +791,6 @@ onMounted(() => {
 .input-field:focus {
   outline: none;
   border-color: #f05432;
-  background-color: #3d4555;
 }
 
 .select-field {
@@ -746,63 +817,56 @@ onMounted(() => {
 
 .modal-footer {
   display: flex;
-  gap: 1rem;
+  gap: 12px;
+  justify-content: flex-end;
   margin-top: 1.5rem;
+  padding-top: 16px;
+  border-top: 1px solid #2d3748;
 }
 
 .btn-submit {
-  flex: 1;
   background-color: #f05432;
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
+  padding: 10px 20px;
   border-radius: 6px;
   cursor: pointer;
-  font-weight: 600;
-  transition: all 0.3s ease;
+  font-weight: bold;
+  transition: background 0.3s ease;
 }
 
 .btn-submit:hover {
-  background-color: #e54320;
+  background-color: #d94a2b;
 }
 
 .btn-cancel {
-  flex: 1;
-  background-color: #556274;
-  color: #e0e7ff;
-  border: none;
-  padding: 0.75rem 1.5rem;
+  background-color: transparent;
+  color: #a0aec0;
+  border: 1px solid #4a5568;
+  padding: 10px 20px;
   border-radius: 6px;
   cursor: pointer;
-  font-weight: 600;
+  font-weight: bold;
   transition: all 0.3s ease;
 }
 
 .btn-cancel:hover {
-  background-color: #6b7280;
+  background-color: #2d3748;
+  color: #fff;
 }
 
 @media (max-width: 768px) {
-  .page-header {
+  .funcionarios-header, .filter-section {
     flex-direction: column;
-    align-items: flex-start;
-    padding: 1.5rem;
+    align-items: stretch;
   }
-
-  .funcionarios-content {
-    padding: 1.5rem;
-  }
-
-  .funcionarios-grid {
-    grid-template-columns: 1fr;
+  
+  .search-box {
+    max-width: 100%;
   }
 
   .form-grid {
     grid-template-columns: 1fr;
-  }
-
-  .modal-content {
-    padding: 1.5rem;
   }
 }
 </style>

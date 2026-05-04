@@ -15,8 +15,9 @@
               <h3>{{ solicitacao.epis?.nome || 'EPI' }}</h3>
               <p class="solicitacao-type">{{ solicitacao.epis?.tipo || 'Tipo não informado' }}</p>
               <p class="solicitacao-date">Solicitado em: {{ formatDate(solicitacao.data_solicitacao) }}</p>
-              <p v-if="solicitacao.data_aprovacao" class="solicitacao-date">Aprovado em: {{ formatDate(solicitacao.data_aprovacao) }}</p>
-              <p v-if="solicitacao.data_devolucao" class="solicitacao-date">Devolvido em: {{ formatDate(solicitacao.data_devolucao) }}</p>
+              <p v-if="solicitacao.data_aprovacao" class="solicitacao-date">Aprovado em: {{ formatDate(solicitacao.data_aprovacao) }}</p>;
+              <p v-if="solicitacao.data_entrega" class="solicitacao-date">Entregue em: {{ formatDate(solicitacao.data_entrega) }}</p>;
+              <p v-if="solicitacao.data_devolucao" class="solicitacao-date">Devolvido em: {{ formatDate(solicitacao.data_devolucao) }}</p>;
             </div>
             <div class="solicitacao-status" :class="getStatusClass(solicitacao.status)">
               {{ getStatusText(solicitacao.status) }}
@@ -97,6 +98,7 @@ const getStatusClass = (status) => {
     case 'pendente': return 'status-pendente'
     case 'aprovado': return 'status-aprovado'
     case 'rejeitado': return 'status-rejeitado'
+    case 'entregue': return 'status-entregue'
     case 'devolvido': return 'status-devolvido'
     default: return 'status-desconhecido'
   }
@@ -108,6 +110,7 @@ const getStatusText = (status) => {
     case 'pendente': return 'Pendente'
     case 'aprovado': return 'Aprovado'
     case 'rejeitado': return 'Rejeitado'
+    case 'entregue': return 'Entregue'
     case 'devolvido': return 'Devolvido'
     default: return status
   }
@@ -199,6 +202,11 @@ onMounted(() => {
 
 .status-rejeitado {
   background: #f44336;
+  color: white;
+}
+
+.status-entregue {
+  background: #9C27B0;
   color: white;
 }
 

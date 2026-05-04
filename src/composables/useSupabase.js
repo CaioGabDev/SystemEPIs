@@ -272,6 +272,50 @@ export function useSupabase() {
     return data || [];
   };
 
+  const registrarEntregaEPI = async (alunoId, episId, dataEntrega) => {
+    try {
+      // Primeiro tenta usar a função RPC se existir
+      const { data, error } = await supabase.rpc('registrar_entrega_epi', {
+        p_aluno_id: alunoId,
+        p_epis_id: episId,
+        p_data_entrega: dataEntrega
+      });
+
+      if (error) {
+        console.warn('RPC não disponível, tentando insert direto:', error);
+        // Se a RPC não existir, tenta o insert direto
+        const { data: insertData, error: insertError } = await supabase
+          .from('aluno_has_epis')
+          .insert([{
+            aluno_id: alunoId,
+            epis_id: episId,
+            data_entrega: dataEntrega
+          }])
+          .select();
+        
+        if (insertError) throw insertError;
+        return insertData;
+      }
+
+      return data;
+    } catch (error) {
+      console.error('Erro ao registrar entrega:', error);
+      throw error;
+    }
+  };
+
+  // Remove um EPI da tabela aluno_has_epis (quando devolve)
+  const removerEntregaEPI = async (alunoId, episId) => {
+    const { error } = await supabase
+      .from('aluno_has_epis')
+      .delete()
+      .eq('aluno_id', alunoId)
+      .eq('epis_id', episId);
+
+    if (error) throw error;
+    return true;
+  };
+
   return {
     // Estado
     session,
@@ -313,6 +357,10 @@ export function useSupabase() {
     getEstoquePerTipo,
     alertasEPIs,
     getFuncionarioComEPIs,
-    getAlunoComEPIsAtrasados
+    getAlunoComEPIsAtrasados,
+    
+    // Entregas de EPIs
+    registrarEntregaEPI,
+    removerEntregaEPI
   };
 }
