@@ -623,7 +623,6 @@ onMounted(() => {
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* CLASSES NOVAS PARA A FOTO DO ALUNO */
 .aluno-perfil-wrapper {
   display: flex;
   align-items: center;
@@ -638,7 +637,6 @@ onMounted(() => {
   border: 2px solid rgba(255, 255, 255, 0.1);
   background-color: #2d3748;
 }
-/* ================================== */
 
 .aluno-info h3 {
   margin: 0 0 4px 0;
@@ -670,7 +668,6 @@ onMounted(() => {
 .status-entregue { background: rgba(59, 130, 246, 0.15); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3); }
 .status-devolvido { background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); }
 
-/* Corpo do Card */
 .solicitacao-body {
   display: flex;
   justify-content: space-between;

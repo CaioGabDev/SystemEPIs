@@ -466,7 +466,7 @@ onMounted(async () => {
 }
 
 .stat-card {
-  background-color: #3d4555;
+  background-color: #1a202c;
   border-radius: 12px;
   padding: 1.5rem;
   display: flex;
@@ -517,7 +517,7 @@ onMounted(async () => {
 }
 
 .section-entregas {
-  background-color: #3d4555;
+  background-color: #1a202c;
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 2rem;
@@ -611,7 +611,7 @@ onMounted(async () => {
 }
 
 .card-section {
-  background-color: #3d4555;
+  background-color: #1a202c;
   border-radius: 12px;
   padding: 1.5rem;
 }
@@ -751,7 +751,7 @@ onMounted(async () => {
 
 /* Seção Funcionários */
 .section-funcionarios {
-  background-color: #3d4555;
+  background-color: #1a202c;
   border-radius: 12px;
   padding: 1.5rem;
 }

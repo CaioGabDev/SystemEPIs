@@ -26,7 +26,7 @@
         <h1>Solicitações</h1>
       </router-link>
       <router-link to="/cadastrar" class="nav-dashboard">
-        <h1>Cadastrar</h1>
+        <h1>Funcionários</h1>
       </router-link>
       <router-link to="/alunos" class="nav-dashboard">
         <h1>Alunos</h1>

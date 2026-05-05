@@ -554,7 +554,6 @@ onMounted(() => {
   font-weight: 700;
 }
 
-/* Stats Container */
 .stats-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -563,7 +562,7 @@ onMounted(() => {
 }
 
 .stat-card {
-  background-color: #3d4555;
+  background-color: #1a202c;
   border-radius: 12px;
   padding: 1.5rem;
   display: flex;
@@ -610,7 +609,6 @@ onMounted(() => {
   opacity: 0.3;
 }
 
-/* Filter Section */
 .filter-section {
   display: flex;
   gap: 1rem;
@@ -626,7 +624,7 @@ onMounted(() => {
 
 .search-input {
   width: 100%;
-  background-color: #3d4555;
+  background-color: #1a202c;
   border: 1px solid #556274;
   border-radius: 8px;
   padding: 0.75rem 1rem;
@@ -652,7 +650,7 @@ onMounted(() => {
 }
 
 .btn-filter {
-  background-color: #3d4555;
+  background-color: #1a202c;
   color: #e0e7ff;
   border: 1px solid #556274;
   padding: 0.75rem 1.25rem;
@@ -680,9 +678,8 @@ onMounted(() => {
   border-color: #b91c1c;
 }
 
-/* Table Section */
 .table-section {
-  background-color: #3d4555;
+  background-color: #1a202c;
   border-radius: 12px;
   overflow: visible;
   margin-bottom: 2rem;
@@ -788,7 +785,6 @@ onMounted(() => {
   color: white;
 }
 
-/* Actions */
 .actions {
   position: relative;
   text-align: center;
@@ -852,10 +848,6 @@ onMounted(() => {
   padding: 2rem !important;
 }
 
-
-
-
-/* Modal */
 .modal-overlay {
   position: fixed;
   top: 0;
@@ -870,7 +862,7 @@ onMounted(() => {
 }
 
 .modal-content {
-  background-color: #3d4555;
+  background-color: #1a202c;
   border-radius: 12px;
   padding: 2rem;
   max-width: 600px;
@@ -939,7 +931,7 @@ onMounted(() => {
 .form-group select:focus {
   outline: none;
   border-color: #f05432;
-  background-color: #3d4555;
+  background-color: #1a202c;
 }
 
 .form-select {
@@ -957,11 +949,11 @@ onMounted(() => {
 .form-select:focus {
   outline: none;
   border-color: #f05432;
-  background-color: #3d4555;
+  background-color: #1a202c;
 }
 
 .form-select option {
-  background-color: #3d4555;
+  background-color: #1a202c;
   color: #e0e7ff;
 }
 
