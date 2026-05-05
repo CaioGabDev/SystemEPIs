@@ -28,7 +28,7 @@
         <div class="epis-grid">
           <div v-for="epi in filteredEpis" :key="epi.idepis" class="epi-card">
             <div class="epi-image">
-              <img :src="epi.imagem || '/placeholder-epi.jpg'" :alt="epi.nome">
+              <img :src="getImagemEpi(epi)" :alt="epi.nome">
             </div>
             <div class="epi-info">
               <h3>{{ epi.nome }}</h3>
@@ -87,6 +87,18 @@ const filteredEpis = computed(() => {
     return matchesSearch && matchesTipo && matchesDisponibilidade
   })
 })
+
+// Função inteligente para retornar a imagem do EPI ou gerar um placeholder
+const getImagemEpi = (epi) => {
+  if (epi.imagem) return epi.imagem;
+  
+  // Pega as primeiras letras do nome do EPI para criar o placeholder
+  const nomeEpi = epi.nome || 'EPI';
+  const iniciais = nomeEpi.substring(0, 2).toUpperCase();
+  
+  // Retorna uma imagem gerada automaticamente no padrão de cor do seu sistema
+  return `https://ui-avatars.com/api/?name=${iniciais}&background=475569&color=fff&size=300&font-size=0.4`;
+}
 
 // busca todos os epis ativos no banco de dados
 const loadEpis = async () => {
@@ -230,6 +242,7 @@ onMounted(() => {
   object-fit: cover;
   border-radius: 8px;
   margin-bottom: 15px;
+  background-color: #1a202c; /* Fundo extra caso a imagem demore a carregar */
 }
 
 .epi-info h3 {

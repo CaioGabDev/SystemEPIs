@@ -15,9 +15,9 @@
               <h3>{{ solicitacao.epis?.nome || 'EPI' }}</h3>
               <p class="solicitacao-type">{{ solicitacao.epis?.tipo || 'Tipo não informado' }}</p>
               <p class="solicitacao-date">Solicitado em: {{ formatDate(solicitacao.data_solicitacao) }}</p>
-              <p v-if="solicitacao.data_aprovacao" class="solicitacao-date">Aprovado em: {{ formatDate(solicitacao.data_aprovacao) }}</p>;
-              <p v-if="solicitacao.data_entrega" class="solicitacao-date">Entregue em: {{ formatDate(solicitacao.data_entrega) }}</p>;
-              <p v-if="solicitacao.data_devolucao" class="solicitacao-date">Devolvido em: {{ formatDate(solicitacao.data_devolucao) }}</p>;
+              <p v-if="solicitacao.data_aprovacao" class="solicitacao-date">Aprovado em: {{ formatDate(solicitacao.data_aprovacao) }}</p>
+              <p v-if="solicitacao.data_entrega" class="solicitacao-date">Entregue em: {{ formatDate(solicitacao.data_entrega) }}</p>
+              <p v-if="solicitacao.data_devolucao" class="solicitacao-date">Devolvido em: {{ formatDate(solicitacao.data_devolucao) }}</p>
             </div>
             <div class="solicitacao-status" :class="getStatusClass(solicitacao.status)">
               {{ getStatusText(solicitacao.status) }}
