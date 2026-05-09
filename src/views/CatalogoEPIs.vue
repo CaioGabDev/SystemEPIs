@@ -90,7 +90,7 @@ const filteredEpis = computed(() => {
 
 // Função inteligente para retornar a imagem do EPI ou gerar um placeholder
 const getImagemEpi = (epi) => {
-  if (epi.imagem) return epi.imagem;
+  if (epi.foto) return epi.foto;
   
   // Pega as primeiras letras do nome do EPI para criar o placeholder
   const nomeEpi = epi.nome || 'EPI';
@@ -238,11 +238,11 @@ onMounted(() => {
 
 .epi-image img {
   width: 100%;
-  height: 150px;
+  
   object-fit: cover;
   border-radius: 8px;
   margin-bottom: 15px;
-  background-color: #1a202c; /* Fundo extra caso a imagem demore a carregar */
+  background-color: #1a202c;
 }
 
 .epi-info h3 {

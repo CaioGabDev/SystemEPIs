@@ -144,6 +144,13 @@
               </select>
             </div>
           </div>
+          <div class="form-group">
+            <label>Foto do EPI</label>
+            <input ref="fotoInput" type="file" @change="handleFotoChange" accept="image/*" class="file-input">
+            <div v-if="novoEPI.fotoPreview" class="foto-preview">
+              <img :src="novoEPI.fotoPreview" alt="Preview">
+            </div>
+          </div>
           <div class="modal-footer">
             <button type="submit" class="btn-submit">Salvar EPI</button>
             <button type="button" class="btn-cancel" @click="showCadastroModal = false">Cancelar</button>
@@ -226,8 +233,13 @@ const novoEPI = ref({
   quantidade: 0,
   codigo_patrimonio: '',
   data_validade: null,
-  disponivel: true
+  disponivel: true,
+  foto: null,
+  fotoPreview: null
 })
+
+// referência para o input de arquivo
+const fotoInput = ref(null)
 
 // extrai todos os tipos únicos de epis e ordena alfabeticamente
 const tiposUnicos = computed(() => {
@@ -347,6 +359,20 @@ const openCadastroModal = () => {
   showCadastroModal.value = true
 }
 
+// manipula a mudança do arquivo de foto
+const handleFotoChange = (event) => {
+  const file = event.target.files?.[0]
+  if (file) {
+    novoEPI.value.foto = file
+    // Cria um preview da foto
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      novoEPI.value.fotoPreview = e.target?.result
+    }
+    reader.readAsDataURL(file)
+  }
+}
+
 const salvarEPI = async () => {
   try {
     if (!novoEPI.value.nome.trim()) {
@@ -355,6 +381,30 @@ const salvarEPI = async () => {
     }
 
     const quantidade = novoEPI.value.quantidade || 1
+    
+    // Upload da foto se existir
+    let fotoUrl = null
+    if (novoEPI.value.foto) {
+      try {
+        const nomeArquivo = `${Date.now()}-${novoEPI.value.foto.name}`
+        const { data, error: uploadError } = await supabase.storage
+          .from('epis')
+          .upload(nomeArquivo, novoEPI.value.foto)
+        
+        if (uploadError) throw uploadError
+        
+        // Pega a URL pública do arquivo
+        const { data: urlData } = supabase.storage
+          .from('epis')
+          .getPublicUrl(nomeArquivo)
+        
+        fotoUrl = urlData.publicUrl
+      } catch (uploadError) {
+        console.error('Erro ao fazer upload da foto:', uploadError)
+        alert('Erro ao fazer upload da foto')
+        return
+      }
+    }
     
     // Cria múltiplos EPIs, um para cada unidade
     const episCriar = []
@@ -367,7 +417,8 @@ const salvarEPI = async () => {
           ? `${novoEPI.value.codigo_patrimonio}-${i + 1}`
           : null,
         data_validade: novoEPI.value.data_validade,
-        disponivel: novoEPI.value.disponivel
+        disponivel: novoEPI.value.disponivel,
+        foto: fotoUrl
       })
     }
 
@@ -390,6 +441,16 @@ const salvarEPI = async () => {
 
     alert(`${quantidade} EPI(s) cadastrado(s) com sucesso!`)
     showCadastroModal.value = false
+    novoEPI.value = {
+      nome: '',
+      tipo: '',
+      quantidade: 0,
+      codigo_patrimonio: '',
+      data_validade: null,
+      disponivel: true,
+      foto: null,
+      fotoPreview: null
+    }
     await carregarEPIs()
   } catch (error) {
     console.error('Erro ao salvar EPI:', error)
@@ -998,6 +1059,45 @@ onMounted(() => {
 
 .btn-cancel:hover {
   background-color: #6b7280;
+}
+
+.file-input {
+  padding: 0.5rem;
+  color: #e0e7ff;
+  cursor: pointer;
+}
+
+.file-input::file-selector-button {
+  background-color: #f05432;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  margin-right: 1rem;
+}
+
+.file-input::file-selector-button:hover {
+  background-color: #e54320;
+}
+
+.foto-preview {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  max-width: 200px;
+  max-height: 200px;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #293140;
+}
+
+.foto-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 @media (max-width: 1024px) {
