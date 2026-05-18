@@ -315,24 +315,23 @@ const handlePhotoChange = async (event) => {
         const { error: uploadError } = await supabase.storage
             .from('avatars')
             .upload(filePath, file, { upsert: true });
+if (uploadError) throw uploadError;
 
-        if (uploadError) throw uploadError;
+const { data } = supabase.storage
+    .from('avatars')
+    .getPublicUrl(filePath);
 
-        // Obter URL pública
-        const { data } = supabase.storage
-            .from('avatars')
-            .getPublicUrl(filePath);
+const urlSemCache = `${data.publicUrl}?t=${new Date().getTime()}`;
 
-        // Atualizar no banco
-        const { error: updateError } = await supabase
-            .from("aluno")
-            .update({ foto: data.publicUrl })
-            .eq("idaluno", user.value.idaluno);
+const { error: updateError } = await supabase
+    .from("aluno")
+    .update({ foto: urlSemCache })
+    .eq("idaluno", user.value.idaluno);
 
-        if (updateError) throw updateError;
-
-        user.value.foto = data.publicUrl;
-        alert('Foto atualizada com sucesso!');
+if (updateError) throw updateError;
+user.value.foto = urlSemCache;
+alert('Foto atualizada com sucesso!');
+// ... resto do código ...
     } catch (error) {
         console.error('Erro ao atualizar foto:', error);
         alert('Erro ao atualizar foto: ' + error.message);
