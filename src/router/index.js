@@ -12,6 +12,7 @@ import CatalogoEPIs from '../views/CatalogoEPIs.vue'
 import MinhasSolicitacoes from '../views/MinhasSolicitacoes.vue'
 import GerenciarSolicitacoes from '../views/GerenciarSolicitacoes.vue'
 import Alunos from '../views/Alunos.vue'
+import NotFound from '../views/NotFound.vue'
 import { useSupabase } from '../composables/useSupabase'
 
 
@@ -84,6 +85,12 @@ const routes = [
     path: '/perfil', 
     component: PerfilAluno,
     meta: { requiresAuth: true }
+  },
+  // ROTA CATCH-ALL PARA ERRO 404
+  {
+    path: '/:pathMatch(.*)*',
+    component: NotFound,
+    meta: { requiresAuth: false }
   }
 ]
     
