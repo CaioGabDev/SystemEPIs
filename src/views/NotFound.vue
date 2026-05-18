@@ -61,7 +61,7 @@ import Header from '../components/Header.vue'
 .error-code {
   font-size: 120px;
   font-weight: 900;
-  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  background: #f05432;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -98,7 +98,7 @@ import Header from '../components/Header.vue'
   justify-content: center;
   width: 80px;
   height: 80px;
-  background: linear-gradient(45deg, #ff6b6b, #ee5a6f);
+  background: #f05432;
   border-radius: 10px;
   animation: float 3s ease-in-out infinite;
 }
