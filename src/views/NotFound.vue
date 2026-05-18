@@ -10,7 +10,7 @@
         </p>
         
         <div class="error-animation">
-          <div class="animation-box"></div>
+          <div class="animation-box"><p>?</p></div>
         </div>
 
         <div class="button-group">
@@ -23,7 +23,6 @@
 
 <script setup>
 import Header from '../components/Header.vue'
-import Footer from '../components/Footer.vue'
 </script>
 
 <style scoped>
@@ -93,6 +92,10 @@ import Footer from '../components/Footer.vue'
 }
 
 .animation-box {
+  display: flex;
+  flex-direction: center;
+  align-items: center;
+  justify-content: center;
   width: 80px;
   height: 80px;
   background: linear-gradient(45deg, #ff6b6b, #ee5a6f);
@@ -100,6 +103,12 @@ import Footer from '../components/Footer.vue'
   animation: float 3s ease-in-out infinite;
 }
 
+.animation-box p {
+  color: white;
+  font-size: 36px;
+  font-weight: bold;
+  margin: 0;
+}
 @keyframes float {
   0%, 100% {
     transform: translateY(0px) rotate(0deg);
