@@ -104,20 +104,15 @@
         <div class="card-section">
           <h2 class="section-title">Atividade</h2>
           <div class="atividade-list">
-            <div class="atividade-item">
-              <span class="atividade-indicator active"></span>
-              <div>Entrega realizada</div>
-              <span class="atividade-time">Há 2 horas</span>
+            <div v-for="atividade in atividades" :key="atividade.id" class="atividade-item">
+              <span :class="['atividade-indicator', atividade.tipo]"></span>
+              <div>{{ atividade.descricao }}</div>
+              <span class="atividade-time">{{ formatarTempo(atividade.data) }}</span>
             </div>
-            <div class="atividade-item">
-              <span class="atividade-indicator warning"></span>
-              <div>Devolução pendente</div>
-              <span class="atividade-time">4 dias</span>
-            </div>
-            <div class="atividade-item">
+            <div v-if="atividades.length === 0" class="atividade-item">
               <span class="atividade-indicator pending"></span>
-              <div>Inventário atualizado</div>
-              <span class="atividade-time">Há 8 horas</span>
+              <div>Nenhuma atividade recente</div>
+              <span class="atividade-time">---</span>
             </div>
           </div>
         </div>
@@ -198,6 +193,22 @@ const alertas = ref([])
 const funcionariosEPIs = ref([])
 // armazena os alunos com epis atrasados
 const alunosEPIs = ref([])
+// armazena as atividades recentes para exibição
+const atividades = ref([])
+
+// formata o tempo relativo (ex: "Há 2 horas")
+const formatarTempo = (data) => {
+  if (!data) return '---'
+  const agora = new Date()
+  const dataAtividade = new Date(data)
+  const diferenca = Math.floor((agora - dataAtividade) / 1000) // em segundos
+  
+  if (diferenca < 60) return 'Agora há pouco'
+  if (diferenca < 3600) return `Há ${Math.floor(diferenca / 60)} minuto(s)`
+  if (diferenca < 86400) return `Há ${Math.floor(diferenca / 3600)} hora(s)`
+  if (diferenca < 604800) return `Há ${Math.floor(diferenca / 86400)} dia(s)`
+  return `Há ${Math.floor(diferenca / 604800)} semana(s)`
+}
 
 // converte string de data em formato legível
 const formatDate = (date) => {
@@ -205,15 +216,14 @@ const formatDate = (date) => {
   return new Date(date).toLocaleDateString('pt-BR')
 }
 
-// calcula o percentual de estoque de um epi em relação ao máximo
+// calcula o percentual de estoque de um epi em relação ao TOTAL do estoque
 const getEstoquePercent = (quantidade) => {
-  // se não houver estoque, retorna 0
-  if (!estoque.value.length) return 0
-  // acha a quantidade máxima entre os tipos
-  const max = Math.max(...estoque.value.map(e => e.quantidade || 0))
-  if (max === 0) return 0
-  // calcula o percentual
-  return (quantidade / max) * 100
+  // Pega o total de EPIs. Se for 0 ou não existir, retorna 0 para evitar erro
+  const totalEstoque = stats.value.total || 0
+  if (totalEstoque === 0) return 0
+  
+  // Calcula o percentual real daquele item em relação ao todo
+  return (Number(quantidade) / totalEstoque) * 100
 }
 
 // gera um relatório em pdf com os dados do dashboard
@@ -259,26 +269,31 @@ const exportarPDF = () => {
     { label: 'Disponibilidade', value: `${stats.value.percentualDisponibilidade}%` }
   ]
 
-  doc.setFontSize(10)
-  doc.setFont(undefined, 'normal')
+  const boxWidth = 42 
+  const boxHeight = 16 
+  const boxGap = 4 
+  
   statBox.forEach((stat, index) => {
-    const xPos = 14 + (index % 2) * 90
-    const yPos = yPosition + Math.floor(index / 2) * 15
+
+    const xPos = 14 + index * (boxWidth + boxGap)
+    const boxY = yPosition
+
 
     doc.setDrawColor(...colorPrimary)
-    doc.rect(xPos, yPos - 7, 80, 12)
-    
+    doc.rect(xPos, boxY, boxWidth, boxHeight)
+
     doc.setTextColor(...colorText)
     doc.setFont(undefined, 'bold')
-    doc.text(String(stat.value), xPos + 5, yPos + 2)
+    doc.setFontSize(11)
+    doc.text(String(stat.value), xPos + (boxWidth / 2), boxY + 7, { align: 'center' })
     
     doc.setFont(undefined, 'normal')
     doc.setTextColor(...colorGray)
     doc.setFontSize(8)
-    doc.text(stat.label, xPos + 5, yPos + 6)
+    doc.text(stat.label, xPos + (boxWidth / 2), boxY + 13, { align: 'center' })
   })
 
-  yPosition += 35
+  yPosition += boxHeight + 15
 
   if (estoque.value.length > 0) {
     doc.setTextColor(...colorText)
@@ -402,6 +417,7 @@ onMounted(async () => {
     alertas.value = await alertasEPIs()
     funcionariosEPIs.value = await getFuncionarioComEPIs()
     alunosEPIs.value = await getAlunoComEPIsAtrasados()
+    carregarAtividades()
   } catch (error) {
     console.error('Erro ao carregar dashboard:', error)
   }

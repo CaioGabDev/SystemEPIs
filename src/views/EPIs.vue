@@ -91,7 +91,7 @@
                 <button class="btn-action" @click="openMenu($event, epi)" title="Ações">
                   ⋮
                 </button>
-                <div v-if="activeMenu === epi.idepis" class="action-menu">
+                <div v-if="activeMenu === epi.idepis" class="action-menu" :style="menuPosition">
                   <button @click="editarEPI(epi)" class="menu-item">Editar</button>
                   <button @click="visualizarDetalhes(epi)" class="menu-item">Detalhes</button>
                   <button @click="deletarEPI(epi.idepis)" class="menu-item delete">Deletar</button>
@@ -213,6 +213,8 @@ const showCadastroModal = ref(false)
 const showFiltroModal = ref(false)
 // armazena qual menu de ações está aberto
 const activeMenu = ref(null)
+// armazena a posição do menu de ações para posicionamento fixed
+const menuPosition = ref({ top: '0px', left: '0px' })
 // armazena qual tipo está selecionado no filtro
 const filtroTipo = ref('')
 // armazena qual disponibilidade está selecionada no filtro
@@ -470,6 +472,15 @@ const carregarEPIs = async () => {
 const openMenu = (event, epi) => {
   event.stopPropagation()
   activeMenu.value = activeMenu.value === epi.idepis ? null : epi.idepis
+  
+  // Calcula a posição do menu baseado no clique
+  if (activeMenu.value === epi.idepis) {
+    const rect = event.target.getBoundingClientRect()
+    menuPosition.value = {
+      top: (rect.bottom + window.scrollY + 5) + 'px',
+      left: (rect.right + window.scrollX - 150) + 'px'
+    }
+  }
 }
 
 const editarEPI = (epi) => {
@@ -588,6 +599,11 @@ const exportarTablePDF = () => {
 
 onMounted(() => {
   carregarEPIs()
+  
+  // Fecha o menu ao clicar fora
+  document.addEventListener('click', () => {
+    activeMenu.value = null
+  })
 })
 </script>
 
@@ -742,7 +758,8 @@ onMounted(() => {
 .table-section {
   background-color: #1a202c;
   border-radius: 12px;
-  overflow: visible;
+  overflow-x: auto;
+  overflow-y: visible;
   margin-bottom: 2rem;
   position: relative;
 }
@@ -758,6 +775,11 @@ onMounted(() => {
 
 .epis-table tbody {
   overflow: visible;
+  position: relative;
+}
+
+.epis-table tbody tr {
+  position: relative;
 }
 
 .epis-table th {
@@ -850,6 +872,7 @@ onMounted(() => {
   position: relative;
   text-align: center;
   z-index: 50;
+  overflow: visible;
 }
 
 .btn-action {
@@ -867,16 +890,13 @@ onMounted(() => {
 }
 
 .action-menu {
-  position: absolute;
-  right: 0;
-  top: 100%;
+  position: fixed;
   background-color: #45505f;
   border: 1px solid #556274;
   border-radius: 6px;
-  z-index: 100;
+  z-index: 9999;
   min-width: 150px;
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5);
-  margin-top: 0.5rem;
   pointer-events: auto;
 }
 

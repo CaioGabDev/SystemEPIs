@@ -76,18 +76,29 @@ const disponibilidadeFilter = ref('')
 // filtra os epis de acordo com busca, tipo e disponibilidade
 const filteredEpis = computed(() => {
   return epis.value.filter(epi => {
-    // verifica se o nome ou descrição contém o texto de busca
-    const matchesSearch = epi.nome.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      (epi.descricao && epi.descricao.toLowerCase().includes(searchQuery.value.toLowerCase()))
-    // verifica se o tipo bate com o filtro selecionado
-    const matchesTipo = !tipoFilter.value || epi.tipo === tipoFilter.value
-    // verifica se a disponibilidade bate com o filtro (compara boolean com string)
-    const matchesDisponibilidade = !disponibilidadeFilter.value ||
-      epi.disponivel === (disponibilidadeFilter.value === 'true')
+    
+    // 1. FILTRO DE BUSCA (Mais seguro contra valores nulos)
+    const termoBusca = searchQuery.value.toLowerCase().trim()
+    const matchesSearch = !termoBusca || 
+      (epi.nome && String(epi.nome).toLowerCase().includes(termoBusca)) ||
+      (epi.descricao && String(epi.descricao).toLowerCase().includes(termoBusca))
+
+    // 2. FILTRO DE TIPO (Ignora maiúsculas e minúsculas na comparação)
+    const matchesTipo = !tipoFilter.value || 
+      (epi.tipo && String(epi.tipo).toLowerCase() === String(tipoFilter.value).toLowerCase())
+
+    // 3. FILTRO DE DISPONIBILIDADE
+    let matchesDisponibilidade = true
+    if (disponibilidadeFilter.value !== '') {
+      // Garante que a leitura do banco vai ser interpretada corretamente como booleano
+      const isDisponivel = epi.disponivel === true || epi.disponivel === 'true' || epi.disponivel === 1
+      const isFiltroDisponivel = disponibilidadeFilter.value === 'true'
+      matchesDisponibilidade = isDisponivel === isFiltroDisponivel
+    }
+    // Retorna verdadeiro apenas se passar por todos os testes
     return matchesSearch && matchesTipo && matchesDisponibilidade
   })
 })
-
 // Função inteligente para retornar a imagem do EPI ou gerar um placeholder
 const getImagemEpi = (epi) => {
   if (epi.foto) return epi.foto;
