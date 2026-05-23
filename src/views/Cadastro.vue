@@ -184,7 +184,7 @@ const formatCPF = (event) => {
 .image-container img {
   width: 100%;
   height: auto;
-  max-height: 700px;
+  max-height: 80vh;
   object-fit: contain;
 }
 
