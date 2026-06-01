@@ -54,6 +54,7 @@ const cpf = ref('')
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
+const loading = ref(false)
 
 // função que faz o cadastro do novo usuário aluno
 const handleCadastro = async () => {
@@ -96,13 +97,31 @@ const handleCadastro = async () => {
 
     console.log('Enviando dados:', userData)
     // chama a função do supabase para criar a conta
+    loading.value = true
     await signUp(email.value.trim(), password.value, userData)
     alert('Cadastro realizado com sucesso!')
     // redireciona para o dashboard do aluno
     router.push('/dashboard-aluno')
   } catch (error) {
+    // mostra o objeto de erro completo para diagnóstico
     console.error('Erro no cadastro:', error)
-    alert('Erro no cadastro: ' + error.message)
+    let details = {}
+    try {
+      // tenta extrair campos comuns do Supabase error
+      details = {
+        message: error.message || null,
+        status: error.status || null,
+        details: error.details || null,
+        hint: error.hint || null
+      }
+    } catch (e) {
+      details = { raw: String(error) }
+    }
+    // alerta com JSON detalhado (útil para debug local)
+    alert('Erro no cadastro: ' + JSON.stringify(details, Object.getOwnPropertyNames(details), 2))
+  }
+  finally {
+    loading.value = false
   }
 }
 

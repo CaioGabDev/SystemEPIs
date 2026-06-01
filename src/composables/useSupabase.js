@@ -37,22 +37,45 @@ const isAluno = () => {
 export function useSupabase() {
   // AUTENTICAÇÃO
   const signUp = async (email, password, userData) => {
+    // Use o trigger do banco para inserir o registro em 'aluno' ou 'funcionario'
+    // Monta os metadados que o trigger espera (raw_user_meta_data)
+    const meta = {
+      tipo: userData?.type || 'aluno',
+      nome: userData?.nome || '',
+      sobrenome: userData?.sobrenome || '',
+      cpf: userData?.cpf || ''
+    };
+
+    if (userData?.type === 'funcionario' && userData?.funcao) {
+      meta.funcao = userData.funcao;
+    }
+
+    // log do meta enviado (diagnóstico)
+    console.log('signUp meta:', meta)
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
-        data: {
-          tipo: userData.type,
-          nome: userData.nome,
-          sobrenome: userData.sobrenome,
-          cpf: userData.cpf,
-          funcao: userData.funcao
-        }
+        data: meta
       }
     });
-    
-    if (error) throw error;
-    console.log('Usuário criado. Trigger criará o registro na tabela correta.');
+
+    // log completo da resposta para diagnóstico no cliente
+    console.log('signUp response:', { data, error })
+
+    if (error) {
+      // anexa informações úteis antes de propagar
+      console.error('signUp error:', error)
+      const errInfo = new Error(error.message || 'Erro no signUp')
+      errInfo.status = error.status || null
+      errInfo.details = error.details || null
+      errInfo.hint = error.hint || null
+      errInfo.raw = error
+      throw errInfo
+    }
+
+    console.log('signUp enviado com metadados ao Auth; trigger deverá criar perfil.');
     return data;
   };
 
